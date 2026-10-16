@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import {
   GitPullRequest,
@@ -24,6 +26,8 @@ import type {
 import {
   STAGE_CONFIG,
   OUTCOME_CONFIG,
+  STAGE_TRANSITIONS,
+  ADMIN_SETTABLE_OUTCOMES,
   formatDateIndo,
 } from '../../domain/stateMachine.ts';
 
@@ -398,9 +402,9 @@ export const ProcessPipeline: React.FC = () => {
                     onChange={(e) => setUpdateStage(e.target.value as SelectionStage)}
                     className="w-full p-2.5 rounded-lg border border-[#D9D9D9] bg-white text-[#242424] focus:outline-hidden focus:border-[#BD214C]"
                   >
-                    {Object.entries(STAGE_CONFIG).map(([k, v]) => (
+                    {[activeProcess.currentStage, ...STAGE_TRANSITIONS[activeProcess.currentStage]].map((k) => (
                       <option key={k} value={k}>
-                        {v.label}
+                        {STAGE_CONFIG[k].label}
                       </option>
                     ))}
                   </select>
@@ -416,7 +420,7 @@ export const ProcessPipeline: React.FC = () => {
                     onChange={(e) => setUpdateOutcome(e.target.value as ProcessOutcome)}
                     className="w-full p-2.5 rounded-lg border border-[#D9D9D9] bg-white text-[#242424] focus:outline-hidden focus:border-[#BD214C]"
                   >
-                    {Object.entries(OUTCOME_CONFIG).map(([k, v]) => (
+                    {ADMIN_SETTABLE_OUTCOMES.map((k) => [k, OUTCOME_CONFIG[k]] as const).map(([k, v]) => (
                       <option key={k} value={k}>
                         {v.label}
                       </option>

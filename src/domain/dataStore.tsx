@@ -1,3 +1,5 @@
+'use client';
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type {
   User,
@@ -15,7 +17,7 @@ import type {
   SelectionStage,
   ProcessOutcome,
 } from './types.ts';
-import { canTransitionStage } from './stateMachine.ts';
+import { isTerminalOutcome, validateProcessUpdate, OUTCOME_CONFIG } from './stateMachine.ts';
 
 // Initial Seed Data
 const INITIAL_USERS: User[] = [
@@ -736,6 +738,8 @@ const DataStoreContext = createContext<DataStoreContextType | null>(null);
 
 const STORAGE_KEY = 'bolbel_career_portal_state_v1';
 
+const newId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
+
 export const DataStoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Load or fallback to seed
   const loadInitial = <T,>(key: string, fallback: T): T => {
@@ -1105,6 +1109,12 @@ export const DataStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (proc.currentStage !== 'menunggu_persetujuan') {
       return { success: false, error: 'Proses ini tidak dalam status menunggu persetujuan.' };
     }
+    if (proc.alumniId !== currentUserId) {
+      return { success: false, error: 'Hanya alumni terkait yang dapat menyetujui pengajuan ini.' };
+    }
+    if (proc.outcome !== 'aktif') {
+      return { success: false, error: 'Pengajuan ini sudah tidak aktif.' };
+    }
 
     const nowIso = new Date().toISOString();
     const newConsent: ConsentRecord = {
@@ -1177,6 +1187,12 @@ export const DataStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const rejectAdminProposal = async (processId: string, reason = 'Alumni menolak penawaran peluang ini.'): Promise<{ success: boolean; error?: string }> => {
     const proc = processes.find((p) => p.id === processId);
     if (!proc) return { success: false, error: 'Proses tidak ditemukan.' };
+    if (proc.alumniId !== currentUserId) {
+      return { success: false, error: 'Hanya alumni terkait yang dapat menolak pengajuan ini.' };
+    }
+    if (proc.currentStage !== 'menunggu_persetujuan' || proc.outcome !== 'aktif') {
+      return { success: false, error: 'Pengajuan ini tidak lagi menunggu persetujuan.' };
+    }
 
     const nowIso = new Date().toISOString();
     const newEvent: ProcessEvent = {
@@ -1210,16 +1226,29 @@ export const DataStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return { success: true };
   };
 
-  // Withdraw Application
+  // Withdraw Application (also revokes consent)
   const withdrawApplication = async (processId: string, reason: string): Promise<{ success: boolean; error?: string }> => {
     const proc = processes.find((p) => p.id === processId);
     if (!proc) return { success: false, error: 'Proses tidak ditemukan.' };
+    if (proc.alumniId !== currentUserId) {
+      return { success: false, error: 'Hanya alumni terkait yang dapat menarik lamaran ini.' };
+    }
+    if (isTerminalOutcome(proc.outcome)) {
+      return {
+        success: false,
+        error: `Proses sudah berstatus akhir (${OUTCOME_CONFIG[proc.outcome].label}) dan tidak dapat ditarik.`,
+      };
+    }
 
     const nowIso = new Date().toISOString();
-    const newEvent: ProcessEvent = {
-      id: `ev-${Date.now()}`,
+    const hadConsent = Boolean(proc.consentGrantedAt && !proc.consentRevokedAt);
+
+    const statusEvent: ProcessEvent = {
+      id: newId('ev'),
       processId,
       eventType: 'status_change',
+      previousStage: proc.currentStage,
+      newStage: proc.currentStage,
       previousOutcome: proc.outcome,
       newOutcome: 'mengundurkan_diri',
       actorId: currentUserId,
@@ -1229,8 +1258,26 @@ export const DataStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       occurredAt: nowIso,
       recordedAt: nowIso,
       publicMessage: `Alumni menarik diri dari proses seleksi. Alasan: ${reason}`,
-      internalNotes: `Pencabutan consent & penarikan diri tercatat. Mohon infokan company jika CV sudah sempat dikirim.`,
+      internalNotes: 'Penarikan diri tercatat. Mohon infokan company jika CV sudah sempat dikirim.',
     };
+
+    const newEvents: ProcessEvent[] = [statusEvent];
+    if (hadConsent) {
+      newEvents.unshift({
+        id: newId('ev'),
+        processId,
+        eventType: 'consent_revoked',
+        previousStage: proc.currentStage,
+        newStage: proc.currentStage,
+        actorId: currentUserId,
+        actorName: currentUser.fullName,
+        actorRole: 'alumni',
+        sourceType: 'alumni_report',
+        occurredAt: nowIso,
+        recordedAt: nowIso,
+        publicMessage: 'Persetujuan pembagian CV dan profil dicabut oleh alumni.',
+      });
+    }
 
     setProcesses((prev) =>
       prev.map((p) => {
@@ -1238,20 +1285,27 @@ export const DataStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return {
           ...p,
           outcome: 'mengundurkan_diri',
-          consentRevokedAt: nowIso,
+          consentRevokedAt: hadConsent ? nowIso : p.consentRevokedAt,
           version: p.version + 1,
           lastStageUpdatedAt: nowIso,
         };
       })
     );
 
-    setEvents((prev) => [newEvent, ...prev]);
+    if (hadConsent) {
+      setConsents((prev) =>
+        prev.map((c) => (c.processId === processId && !c.revokedAt ? { ...c, revokedAt: nowIso } : c))
+      );
+    }
 
-    // If already forwarded to company, create task for Gifari to notify company HR
+    // Events are prepended, so reverse to keep consent_revoked displayed before the status change
+    setEvents((prev) => [...newEvents.slice().reverse(), ...prev]);
+
+    // If CV may already be with the company, create task for Gifari to notify company HR
     if (proc.currentStage !== 'masuk_bolbel' && proc.currentStage !== 'menunggu_persetujuan') {
       setTasks((prev) => [
         {
-          id: `task-${Date.now()}`,
+          id: newId('task'),
           processId,
           jobId: proc.jobId,
           alumniId: proc.alumniId,
@@ -1276,6 +1330,7 @@ export const DataStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     internalNotes: string,
     publicMessage?: string
   ): Promise<{ success: boolean; error?: string }> => {
+    if (currentUser.role !== 'admin') return { success: false, error: 'Hanya admin yang dapat meneruskan CV.' };
     const proc = processes.find((p) => p.id === processId);
     if (!proc) return { success: false, error: 'Proses tidak ditemukan.' };
 
@@ -1284,7 +1339,12 @@ export const DataStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     // Verify consent
     const hasConsent = Boolean(proc.consentGrantedAt && !proc.consentRevokedAt);
-    const transitionCheck = canTransitionStage(proc.currentStage, 'diteruskan_ke_company', hasConsent, channel);
+    const transitionCheck = validateProcessUpdate(
+      proc,
+      { stage: 'diteruskan_ke_company', outcome: proc.outcome },
+      hasConsent,
+      channel
+    );
     if (!transitionCheck.allowed) {
       return { success: false, error: transitionCheck.reason };
     }
@@ -1354,8 +1414,19 @@ export const DataStoreProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     interviewSchedule?: string,
     actualStartDate?: string
   ): Promise<{ success: boolean; error?: string }> => {
+    if (currentUser.role !== 'admin') return { success: false, error: 'Hanya admin yang dapat memperbarui tahap proses.' };
     const proc = processes.find((p) => p.id === processId);
     if (!proc) return { success: false, error: 'Proses tidak ditemukan.' };
+
+    const job = jobs.find((j) => j.id === proc.jobId);
+    const hasConsent = Boolean(proc.consentGrantedAt && !proc.consentRevokedAt);
+    const check = validateProcessUpdate(
+      proc,
+      { stage: newStage, outcome: newOutcome },
+      hasConsent,
+      job?.applyChannel || 'bolbel'
+    );
+    if (!check.allowed) return { success: false, error: check.reason };
 
     const nowIso = new Date().toISOString();
     const newEvent: ProcessEvent = {

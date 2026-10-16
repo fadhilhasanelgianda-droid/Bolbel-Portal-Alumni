@@ -11,6 +11,7 @@ import type {
   CVDocument,
   CandidateProcess,
   ApplyChannel,
+  JobStatus,
   CsvRosterImportRow,
 } from './types.ts';
 
@@ -179,7 +180,43 @@ export function checkCanApply(
 }
 
 /**
- * Checks if stage transition is valid based on PRD Section 7 & Section 11
+ * Allowed forward transitions between selection stages (PRD Section 7).
+ * Stage never moves backwards; mistakes are fixed via a correction event, not by rewinding.
+ */
+export const STAGE_TRANSITIONS: Record<SelectionStage, SelectionStage[]> = {
+  menunggu_persetujuan: ['masuk_bolbel'],
+  masuk_bolbel: ['diteruskan_ke_company'],
+  dilaporkan_apply_eksternal: ['diteruskan_ke_company', 'screening', 'interview'],
+  diteruskan_ke_company: ['screening', 'interview'],
+  screening: ['interview', 'offer'],
+  interview: ['offer'],
+  offer: ['offer_diterima'],
+  offer_diterima: ['mulai_kerja'],
+  mulai_kerja: [],
+};
+
+/** Outcomes an admin may record. 'tidak_menyetujui_pengajuan' is alumni-only (rejectAdminProposal). */
+export const ADMIN_SETTABLE_OUTCOMES: ProcessOutcome[] = [
+  'aktif',
+  'ditolak',
+  'mengundurkan_diri',
+  'menolak_offer',
+  'dibatalkan_company',
+  'selesai_mulai_kerja',
+];
+
+/** Stages from which CV/profile data is (or may be) in the hands of the company. */
+const COMPANY_FACING_MIN_STEP = STAGE_CONFIG.diteruskan_ke_company.stepOrder;
+
+export function isTerminalOutcome(outcome: ProcessOutcome): boolean {
+  return OUTCOME_CONFIG[outcome].isTerminal;
+}
+
+/**
+ * Checks if a stage transition is valid based on PRD Section 7 & Section 11:
+ * - only forward moves listed in STAGE_TRANSITIONS
+ * - moving a BolBel-channel process to any company-facing stage needs active consent
+ * - a pending proposal cannot move before the alumni consents
  */
 export function canTransitionStage(
   currentStage: SelectionStage,
@@ -187,31 +224,101 @@ export function canTransitionStage(
   hasValidConsent: boolean,
   channel: ApplyChannel
 ): { allowed: boolean; reason?: string } {
-  // If staying on same stage, allowed (e.g. updating notes or schedule)
+  // Staying on same stage is allowed (e.g. updating notes or schedule)
   if (currentStage === newStage) {
     return { allowed: true };
   }
 
-  // To forward to company on BolBel channel, explicit consent MUST be active
-  if (newStage === 'diteruskan_ke_company') {
-    if (channel === 'bolbel' && !hasValidConsent) {
-      return {
-        allowed: false,
-        reason: 'Penerusan CV ke company diblokir karena belum ada persetujuan (consent) aktif dari alumni untuk lowongan ini.',
-      };
-    }
+  if (currentStage === 'menunggu_persetujuan' && !hasValidConsent) {
+    return {
+      allowed: false,
+      reason: 'Kandidat belum memberikan persetujuan untuk pengajuan ini.',
+    };
   }
 
-  // Waiting for approval can only move to masuk_bolbel if consent is given
-  if (currentStage === 'menunggu_persetujuan' && newStage !== 'masuk_bolbel') {
-    if (!hasValidConsent) {
-      return {
-        allowed: false,
-        reason: 'Kandidat belum memberikan persetujuan untuk pengajuan ini.',
-      };
-    }
+  if (!STAGE_TRANSITIONS[currentStage].includes(newStage)) {
+    return {
+      allowed: false,
+      reason: `Perpindahan tahap dari "${STAGE_CONFIG[currentStage].label}" ke "${STAGE_CONFIG[newStage].label}" tidak diizinkan.`,
+    };
   }
 
+  if (
+    channel === 'bolbel' &&
+    STAGE_CONFIG[newStage].stepOrder >= COMPANY_FACING_MIN_STEP &&
+    !hasValidConsent
+  ) {
+    return {
+      allowed: false,
+      reason: 'Penerusan CV ke company diblokir karena belum ada persetujuan (consent) aktif dari alumni untuk lowongan ini.',
+    };
+  }
+
+  return { allowed: true };
+}
+
+/**
+ * Validates an admin-side update of a process (stage and/or outcome).
+ * Terminal processes are frozen, and stage/outcome must stay consistent with each other.
+ */
+export function validateProcessUpdate(
+  current: Pick<CandidateProcess, 'currentStage' | 'outcome'>,
+  next: { stage: SelectionStage; outcome: ProcessOutcome },
+  hasValidConsent: boolean,
+  channel: ApplyChannel
+): { allowed: boolean; reason?: string } {
+  if (isTerminalOutcome(current.outcome)) {
+    return {
+      allowed: false,
+      reason: `Proses sudah berstatus akhir (${OUTCOME_CONFIG[current.outcome].label}) dan tidak dapat diubah.`,
+    };
+  }
+
+  if (!ADMIN_SETTABLE_OUTCOMES.includes(next.outcome)) {
+    return { allowed: false, reason: 'Hasil akhir ini hanya dapat dicatat oleh alumni.' };
+  }
+
+  const stageCheck = canTransitionStage(current.currentStage, next.stage, hasValidConsent, channel);
+  if (!stageCheck.allowed) return stageCheck;
+
+  const stageChanged = next.stage !== current.currentStage;
+
+  if (next.outcome === 'selesai_mulai_kerja' && next.stage !== 'mulai_kerja') {
+    return { allowed: false, reason: 'Hasil "Selesai & Mulai Kerja" hanya valid pada tahap Mulai Kerja.' };
+  }
+  if (next.stage === 'mulai_kerja' && next.outcome !== 'selesai_mulai_kerja') {
+    return { allowed: false, reason: 'Tahap Mulai Kerja harus diselesaikan dengan hasil "Selesai & Mulai Kerja".' };
+  }
+  if (next.outcome === 'menolak_offer' && next.stage !== 'offer') {
+    return { allowed: false, reason: 'Hasil "Menolak Offer" hanya valid pada tahap Offer.' };
+  }
+  if (isTerminalOutcome(next.outcome) && next.outcome !== 'selesai_mulai_kerja' && stageChanged) {
+    return { allowed: false, reason: 'Hasil akhir dicatat pada tahap saat ini; jangan ubah tahap bersamaan.' };
+  }
+
+  return { allowed: true };
+}
+
+/** Allowed lifecycle moves for a job posting. 'archived' is final; 'closed' can only be archived. */
+export const JOB_STATUS_TRANSITIONS: Record<JobStatus, JobStatus[]> = {
+  draft: ['published', 'archived'],
+  published: ['paused', 'closed', 'archived'],
+  paused: ['published', 'closed', 'archived'],
+  closed: ['archived'],
+  archived: [],
+};
+
+export function canChangeJobStatus(
+  current: JobStatus,
+  next: JobStatus,
+  reason?: string
+): { allowed: boolean; reason?: string } {
+  if (!JOB_STATUS_TRANSITIONS[current].includes(next)) {
+    return { allowed: false, reason: `Status lowongan tidak dapat diubah dari "${current}" ke "${next}".` };
+  }
+  if (next === 'closed' && !reason?.trim()) {
+    return { allowed: false, reason: 'Alasan penutupan lowongan wajib diisi.' };
+  }
   return { allowed: true };
 }
 

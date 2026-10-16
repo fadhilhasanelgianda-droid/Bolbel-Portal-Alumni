@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
-import { DataStoreProvider, useDataStore } from './domain/dataStore.tsx';
-import { Navbar } from './components/Navbar.tsx';
-import { JobList } from './components/alumni/JobList.tsx';
-import { MyApplications } from './components/alumni/MyApplications.tsx';
-import { ProfileAndCV } from './components/alumni/ProfileAndCV.tsx';
-import { AdminDashboard } from './components/admin/AdminDashboard.tsx';
-import { CandidateSearch } from './components/admin/CandidateSearch.tsx';
-import { JobManagement } from './components/admin/JobManagement.tsx';
-import { ProcessPipeline } from './components/admin/ProcessPipeline.tsx';
-import { FollowUpTasks } from './components/admin/FollowUpTasks.tsx';
-import { DataImportAndAudit } from './components/admin/DataImportAndAudit.tsx';
+'use client';
+
+import React, { useState, useSyncExternalStore } from 'react';
+import { DataStoreProvider, useDataStore } from '../domain/dataStore.tsx';
+import { Navbar } from './Navbar.tsx';
+import { JobList } from './alumni/JobList.tsx';
+import { MyApplications } from './alumni/MyApplications.tsx';
+import { ProfileAndCV } from './alumni/ProfileAndCV.tsx';
+import { AdminDashboard } from './admin/AdminDashboard.tsx';
+import { CandidateSearch } from './admin/CandidateSearch.tsx';
+import { JobManagement } from './admin/JobManagement.tsx';
+import { ProcessPipeline } from './admin/ProcessPipeline.tsx';
+import { FollowUpTasks } from './admin/FollowUpTasks.tsx';
+import { DataImportAndAudit } from './admin/DataImportAndAudit.tsx';
 import { ShieldCheck, Heart, Mail } from 'lucide-react';
 
 const AppContent: React.FC = () => {
@@ -63,7 +65,13 @@ const AppContent: React.FC = () => {
   );
 };
 
-export default function App() {
+const subscribeNoop = () => () => {};
+
+export function AppShell() {
+  // The prototype store reads localStorage on init, so only render after hydration
+  // to avoid a server/client mismatch. Goes away once the store talks to the API.
+  const mounted = useSyncExternalStore(subscribeNoop, () => true, () => false);
+  if (!mounted) return null;
   return (
     <DataStoreProvider>
       <AppContent />

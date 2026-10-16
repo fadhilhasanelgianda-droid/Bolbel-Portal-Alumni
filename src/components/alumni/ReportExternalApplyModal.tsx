@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { X, ExternalLink, Calendar, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { Job } from '../../domain/types.ts';

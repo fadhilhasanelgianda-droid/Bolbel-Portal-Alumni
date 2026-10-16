@@ -5,6 +5,8 @@ import {
   isMinimumProfileComplete,
   checkCanApply,
   canTransitionStage,
+  validateProcessUpdate,
+  canChangeJobStatus,
   parseAndValidateRosterCsv,
 } from './stateMachine.ts';
 import type { AlumniProfile, CVDocument, Job, CandidateProcess } from './types.ts';
@@ -189,4 +191,58 @@ sarah@example.com,Sarah Annisa,Full Course,Batch 9,eligible`;
   // Row 3: duplicate of existing email
   assert.equal(results[2].isValid, false);
   assert.equal(results[2].isDuplicate, true);
+});
+
+test('canTransitionStage rejects skipping or rewinding stages', () => {
+  assert.equal(canTransitionStage('masuk_bolbel', 'interview', true, 'bolbel').allowed, false);
+  assert.equal(canTransitionStage('interview', 'screening', true, 'bolbel').allowed, false);
+  assert.equal(canTransitionStage('screening', 'interview', true, 'bolbel').allowed, true);
+  // pending proposal can't move without consent
+  assert.equal(canTransitionStage('menunggu_persetujuan', 'masuk_bolbel', false, 'bolbel').allowed, false);
+});
+
+test('validateProcessUpdate freezes terminal processes', () => {
+  const res = validateProcessUpdate(
+    { currentStage: 'interview', outcome: 'ditolak' },
+    { stage: 'interview', outcome: 'aktif' },
+    true,
+    'bolbel'
+  );
+  assert.equal(res.allowed, false);
+  assert.ok(res.reason?.includes('status akhir'));
+});
+
+test('validateProcessUpdate keeps stage and outcome consistent', () => {
+  const active = { currentStage: 'offer', outcome: 'aktif' } as const;
+  // menolak_offer only at offer stage
+  assert.equal(validateProcessUpdate(active, { stage: 'offer', outcome: 'menolak_offer' }, true, 'bolbel').allowed, true);
+  assert.equal(
+    validateProcessUpdate({ currentStage: 'screening', outcome: 'aktif' }, { stage: 'screening', outcome: 'menolak_offer' }, true, 'bolbel').allowed,
+    false
+  );
+  // mulai_kerja <-> selesai_mulai_kerja
+  const accepted = { currentStage: 'offer_diterima', outcome: 'aktif' } as const;
+  assert.equal(validateProcessUpdate(accepted, { stage: 'mulai_kerja', outcome: 'aktif' }, true, 'bolbel').allowed, false);
+  assert.equal(validateProcessUpdate(accepted, { stage: 'mulai_kerja', outcome: 'selesai_mulai_kerja' }, true, 'bolbel').allowed, true);
+  // terminal outcome cannot change stage at the same time
+  assert.equal(validateProcessUpdate(active, { stage: 'offer_diterima', outcome: 'ditolak' }, true, 'bolbel').allowed, false);
+  // alumni-only outcome
+  assert.equal(validateProcessUpdate(active, { stage: 'offer', outcome: 'tidak_menyetujui_pengajuan' }, true, 'bolbel').allowed, false);
+});
+
+test('validateProcessUpdate requires active consent for company-facing stages on BolBel channel', () => {
+  const p = { currentStage: 'masuk_bolbel', outcome: 'aktif' } as const;
+  assert.equal(validateProcessUpdate(p, { stage: 'diteruskan_ke_company', outcome: 'aktif' }, false, 'bolbel').allowed, false);
+  assert.equal(validateProcessUpdate(p, { stage: 'diteruskan_ke_company', outcome: 'aktif' }, true, 'bolbel').allowed, true);
+});
+
+test('canChangeJobStatus follows the job lifecycle', () => {
+  assert.equal(canChangeJobStatus('draft', 'published').allowed, true);
+  assert.equal(canChangeJobStatus('published', 'paused').allowed, true);
+  assert.equal(canChangeJobStatus('paused', 'published').allowed, true);
+  assert.equal(canChangeJobStatus('closed', 'published').allowed, false);
+  assert.equal(canChangeJobStatus('archived', 'published').allowed, false);
+  // closing needs a reason
+  assert.equal(canChangeJobStatus('published', 'closed').allowed, false);
+  assert.equal(canChangeJobStatus('published', 'closed', 'Posisi terisi').allowed, true);
 });
