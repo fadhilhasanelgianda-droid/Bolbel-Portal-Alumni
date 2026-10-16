@@ -1,0 +1,6 @@
+{
+  "name": "Portal Karier Alumni Boleh Belajar",
+  "description": "Portal karier resmi alumni Boleh Belajar untuk mengakses lowongan terkurasi, manajemen profil & CV, serta tracking proses seleksi terverifikasi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
