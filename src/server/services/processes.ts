@@ -25,13 +25,28 @@ import { rowTo, rowsTo } from '../mappers.ts';
 import { getProfile } from './profiles.ts';
 import { POLICY_VERSION, addDays, insertEvent, insertTask } from './shared.ts';
 
-const SELECT_PROCESS = `
-  SELECT p.*, u.full_name AS alumni_name, u.email AS alumni_email,
-         j.title AS job_title, j.company_id, c.name AS company_name
+const FROM_PROCESS = `
     FROM candidate_processes p
     JOIN users u ON u.id = p.alumni_id
     JOIN jobs j ON j.id = p.job_id
     JOIN companies c ON c.id = j.company_id`;
+
+const JOINED = `u.full_name AS alumni_name, u.email AS alumni_email, j.title AS job_title, j.company_id, c.name AS company_name`;
+
+const SELECT_PROCESS = `SELECT p.*, ${JOINED}${FROM_PROCESS}`;
+
+// List view: no profile_snapshot (a jsonb copy per row the UI never shows). The active consent's policy version is
+// folded in so the admin pipeline doesn't need the whole consent_records table.
+const SELECT_PROCESS_LIST = `
+  SELECT p.id, p.alumni_id, p.job_id, p.origin, p.current_stage, p.outcome, p.document_version_id, p.document_name,
+         p.consent_granted_at, p.consent_revoked_at, p.reported_apply_date, p.interview_schedule, p.actual_start_date,
+         p.version, p.last_stage_updated_at, p.last_follow_up_date, p.created_at, ${JOINED},
+         (SELECT k.policy_version FROM consent_records k WHERE k.process_id = p.id AND k.revoked_at IS NULL
+           ORDER BY k.granted_at DESC LIMIT 1) AS consent_policy_version${FROM_PROCESS}`;
+
+/** Safety caps for admin list endpoints: newest first, so a growing table can never produce an unbounded response. */
+export const ADMIN_LIST_LIMIT = 2000;
+export const ADMIN_AUDIT_LIMIT = 500;
 
 const SELECT_JOB = `SELECT j.*, c.name AS company_name FROM jobs j JOIN companies c ON c.id = j.company_id`;
 
@@ -95,8 +110,8 @@ async function updateProcess(db: pg.PoolClient, id: string, changes: Record<stri
 export async function listProcesses(user: SessionUser): Promise<CandidateProcess[]> {
   const { rows } =
     user.role === 'admin'
-      ? await query(`${SELECT_PROCESS} ORDER BY p.last_stage_updated_at DESC`)
-      : await query(`${SELECT_PROCESS} WHERE p.alumni_id = $1 ORDER BY p.last_stage_updated_at DESC`, [user.id]);
+      ? await query(`${SELECT_PROCESS_LIST} ORDER BY p.last_stage_updated_at DESC LIMIT $1`, [ADMIN_LIST_LIMIT])
+      : await query(`${SELECT_PROCESS_LIST} WHERE p.alumni_id = $1 ORDER BY p.last_stage_updated_at DESC`, [user.id]);
   return rowsTo<CandidateProcess>(rows);
 }
 
@@ -111,13 +126,28 @@ export async function listEvents(user: SessionUser, processId: string): Promise<
   return user.role === 'admin' ? events : events.map(({ internalNotes: _omit, ...e }) => e);
 }
 
+/** All events visible to the user (own processes for alumni). Alumni never receive internalNotes. */
+export async function listAllEvents(user: SessionUser): Promise<ProcessEvent[]> {
+  const { rows } =
+    user.role === 'admin'
+      ? await query('SELECT * FROM process_events ORDER BY recorded_at DESC, id LIMIT $1', [ADMIN_AUDIT_LIMIT])
+      : await query(
+          `SELECT e.* FROM process_events e JOIN candidate_processes p ON p.id = e.process_id
+            WHERE p.alumni_id = $1 ORDER BY e.recorded_at DESC, e.id`,
+          [user.id]
+        );
+  const events = rowsTo<ProcessEvent>(rows);
+  return user.role === 'admin' ? events : events.map(({ internalNotes: _omit, ...e }) => e);
+}
+
 export async function listConsents(user: SessionUser): Promise<ConsentRecord[]> {
   const { rows } =
     user.role === 'admin'
       ? await query(
           `SELECT k.*, c.name AS company_name, j.title AS job_title
              FROM consent_records k JOIN jobs j ON j.id = k.job_id JOIN companies c ON c.id = j.company_id
-            ORDER BY k.granted_at DESC`
+            ORDER BY k.granted_at DESC LIMIT $1`,
+          [ADMIN_AUDIT_LIMIT]
         )
       : await query(
           `SELECT k.*, c.name AS company_name, j.title AS job_title
@@ -131,7 +161,7 @@ export async function listConsents(user: SessionUser): Promise<ConsentRecord[]> 
 export async function listReports(user: SessionUser): Promise<AlumniReport[]> {
   const { rows } =
     user.role === 'admin'
-      ? await query('SELECT * FROM alumni_reports ORDER BY created_at DESC')
+      ? await query('SELECT * FROM alumni_reports ORDER BY created_at DESC LIMIT $1', [ADMIN_LIST_LIMIT])
       : await query('SELECT * FROM alumni_reports WHERE alumni_id = $1 ORDER BY created_at DESC', [user.id]);
   return rowsTo<AlumniReport>(rows);
 }

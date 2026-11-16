@@ -97,6 +97,10 @@ export async function isRateLimited(key: string, limit: number, windowSeconds: n
     [key, windowSeconds]
   );
   // Opportunistic cleanup so the table doesn't grow without bound
-  if (Math.random() < 0.02) await query(`DELETE FROM rate_limit_hits WHERE hit_at < now() - interval '1 day'`);
+  if (Math.random() < 0.02) {
+    await query(`DELETE FROM rate_limit_hits WHERE hit_at < now() - interval '1 day'`);
+    await query(`DELETE FROM sessions WHERE expires_at < now()`);
+    await query(`DELETE FROM auth_tokens WHERE expires_at < now() - interval '7 days'`);
+  }
   return rows[0].n > limit;
 }

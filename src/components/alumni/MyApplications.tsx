@@ -17,7 +17,7 @@ import {
   ArrowRight,
   RotateCcw,
 } from 'lucide-react';
-import { useDataStore } from '../../domain/dataStore.tsx';
+import { useDataStore, useProcessEvents } from '../../domain/dataStore.tsx';
 import type { CandidateProcess, SelectionStage, ProcessOutcome } from '../../domain/types.ts';
 import {
   STAGE_CONFIG,
@@ -29,7 +29,6 @@ export const MyApplications: React.FC = () => {
   const {
     currentUser,
     processes,
-    events,
     approveAdminProposal,
     rejectAdminProposal,
     withdrawApplication,
@@ -41,6 +40,7 @@ export const MyApplications: React.FC = () => {
   const [withdrawTargetProcess, setWithdrawTargetProcess] = useState<CandidateProcess | null>(null);
   const [withdrawReason, setWithdrawReason] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Filter processes belonging to current user
   const myProcesses = processes.filter((p) => p.alumniId === currentUser.id);
@@ -58,19 +58,19 @@ export const MyApplications: React.FC = () => {
   const activeProcess = myProcesses.find((p) => p.id === selectedProcessId) || otherApplications[0] || null;
 
   // Events for selected process
-  const activeEvents = events
-    .filter((e) => e.processId === activeProcess?.id)
-    .sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime());
+  const activeEvents = useProcessEvents(activeProcess);
 
   const handleApproveProposal = async (procId: string) => {
     setIsProcessing(true);
-    await approveAdminProposal(procId);
+    const res = await approveAdminProposal(procId);
+    setActionError(res.success ? null : (res.error ?? 'Gagal menyetujui pengajuan.'));
     setIsProcessing(false);
   };
 
   const handleRejectProposal = async (procId: string) => {
     setIsProcessing(true);
-    await rejectAdminProposal(procId);
+    const res = await rejectAdminProposal(procId);
+    setActionError(res.success ? null : (res.error ?? 'Gagal menolak pengajuan.'));
     setIsProcessing(false);
   };
 
@@ -78,8 +78,13 @@ export const MyApplications: React.FC = () => {
     e.preventDefault();
     if (!withdrawTargetProcess || !withdrawReason) return;
     setIsProcessing(true);
-    await withdrawApplication(withdrawTargetProcess.id, withdrawReason);
+    const res = await withdrawApplication(withdrawTargetProcess.id, withdrawReason);
     setIsProcessing(false);
+    if (!res.success) {
+      setActionError(res.error ?? 'Gagal menarik lamaran.');
+      return;
+    }
+    setActionError(null);
     setWithdrawTargetProcess(null);
     setWithdrawReason('');
   };
@@ -102,6 +107,12 @@ export const MyApplications: React.FC = () => {
           Pantau progres lamaran, tanggal pembaruan resmi dari Gifari, serta persetujuan peluang kerja dari tim BolBel.
         </p>
       </div>
+
+      {actionError && (
+        <div role="alert" className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700">
+          {actionError}
+        </div>
+      )}
 
       {/* FR07 Proactive Proposals Banner */}
       {pendingProposals.length > 0 && (

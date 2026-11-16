@@ -1,5 +1,5 @@
-import bcrypt from 'bcryptjs';
 import { getPool } from '../src/server/db.ts';
+import { hashPassword } from '../src/server/password.ts';
 import { emailSchema, passwordSchema } from '../src/server/validation.ts';
 
 const email = emailSchema.parse(process.env.ADMIN_EMAIL);
@@ -11,7 +11,7 @@ if ((await pool.query('SELECT 1 FROM users WHERE lower(email) = $1', [email])).r
 } else {
   await pool.query(`INSERT INTO users (email, password_hash, role, full_name) VALUES ($1, $2, 'admin', 'Admin BolBel')`, [
     email,
-    await bcrypt.hash(password, 12),
+    await hashPassword(password),
   ]);
   console.log(`created admin ${email}`);
 }

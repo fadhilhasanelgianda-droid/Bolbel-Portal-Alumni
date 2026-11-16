@@ -1,12 +1,9 @@
-import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { NextResponse } from 'next/server';
 import { clientIp, createSession, isRateLimited, isSameOrigin, jsonError } from '@/server/auth';
 import { query } from '@/server/db';
+import { DUMMY_HASH, verifyPassword } from '@/server/password';
 import { emailSchema } from '@/server/validation';
-
-// Compared against when the email is unknown so login timing doesn't reveal which emails exist
-const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', 12);
 
 export async function POST(req: Request) {
   if (!isSameOrigin(req)) return jsonError('Origin tidak diizinkan.', 403);
@@ -28,7 +25,7 @@ export async function POST(req: Request) {
     body.data.email,
   ]);
   const user = rows[0];
-  const ok = await bcrypt.compare(body.data.password, user?.password_hash ?? DUMMY_HASH);
+  const ok = await verifyPassword(body.data.password, user?.password_hash ?? DUMMY_HASH);
   if (!user || !ok || !user.active) return jsonError('Email atau password salah.', 401);
 
   await query('UPDATE users SET last_login_at = now() WHERE id = $1', [user.id]);

@@ -11,7 +11,7 @@ export interface AlumniRosterEntry {
   id: string;
   email: string;
   fullName: string;
-  program: 'Full Course' | 'Career Prep' | 'Digital Marketing Intensive' | 'Performance Marketing Specialization';
+  program: string;
   batch: string;
   eligibility: EligibilityStatus;
   invitedAt: string;
@@ -168,7 +168,8 @@ export interface CandidateProcess {
   outcome: ProcessOutcome;
   documentVersionId: string;
   documentName: string;
-  profileSnapshot: {
+  /** Only present on single-process reads; list endpoints omit it. */
+  profileSnapshot?: {
     fullName: string;
     email: string;
     phone?: string;
@@ -181,6 +182,8 @@ export interface CandidateProcess {
   };
   consentGrantedAt?: string;
   consentRevokedAt?: string;
+  /** Policy version of the currently active consent (list endpoints only). */
+  consentPolicyVersion?: string;
   reportedApplyDate?: string;
   interviewSchedule?: string;
   actualStartDate?: string;

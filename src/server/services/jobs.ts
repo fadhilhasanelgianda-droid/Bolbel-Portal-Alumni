@@ -66,9 +66,16 @@ export async function listJobs(user: SessionUser): Promise<Job[]> {
 }
 
 export async function getJob(user: SessionUser, id: string): Promise<Job> {
-  const job = (await listJobs(user)).find((j) => j.id === id);
-  if (!job) throw new HttpError(404, 'Lowongan tidak ditemukan.');
-  return job;
+  const visible = user.role === 'admin'
+    ? ''
+    : `AND (j.status = 'published' OR (j.status <> 'draft' AND EXISTS (
+         SELECT 1 FROM candidate_processes p WHERE p.job_id = j.id AND p.alumni_id = $2)))`;
+  const { rows } = await query(
+    `${SELECT_JOB} WHERE j.id = $1 ${visible}`,
+    user.role === 'admin' ? [id] : [id, user.id]
+  );
+  if (!rows[0]) throw new HttpError(404, 'Lowongan tidak ditemukan.');
+  return rowTo<Job>(rows[0]);
 }
 
 export async function createJob(input: z.infer<typeof jobInputSchema>): Promise<Job> {

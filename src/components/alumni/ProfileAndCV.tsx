@@ -58,18 +58,19 @@ export const ProfileAndCV: React.FC = () => {
       whatsappContact: true,
       linkedinUrl: '',
       portfolioUrl: '',
-      program: 'Full Course',
-      batch: 'Batch 10',
+      program: '',
+      batch: '',
       employmentStatus: 'belum_bekerja',
-      opennessStatus: 'aktif_mencari',
-      startReadiness: 'segera',
-      targetRoles: ['Digital Marketing Specialist'],
-      targetWorkTypes: ['full_time'],
-      targetWorkModels: ['hybrid', 'remote'],
-      domicile: 'Jakarta Selatan',
-      targetLocations: ['Jakarta'],
-      experienceBand: '1-2_tahun',
-      allowProactiveContact: true,
+      opennessStatus: 'belum_dikonfirmasi',
+      startReadiness: 'diskusi',
+      targetRoles: [],
+      targetWorkTypes: [],
+      targetWorkModels: [],
+      domicile: '',
+      targetLocations: [],
+      experienceBand: '<1_tahun',
+      // Opt-in: proactive offers need the alumnus's explicit choice
+      allowProactiveContact: false,
       availabilityConfirmedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -78,6 +79,7 @@ export const ProfileAndCV: React.FC = () => {
   const [roleInput, setRoleInput] = useState('');
   const [locationInput, setLocationInput] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Freshness check (PRD FR02: > 30 days triggers "Perlu konfirmasi")
   const freshness = isProfileFresh(currentProfile?.availabilityConfirmedAt);
@@ -106,15 +108,30 @@ export const ProfileAndCV: React.FC = () => {
     }
   };
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile(formData);
+    setSaveError(null);
+    const res = await updateProfile(formData);
+    if (!res.success) {
+      setSaveSuccess(false);
+      setSaveError(res.error ?? 'Gagal menyimpan profil.');
+      return;
+    }
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };
 
-  const handleQuickConfirmAvailability = () => {
-    confirmAvailability(currentUser.id);
+  const handleQuickConfirmAvailability = async () => {
+    if (!currentProfile) {
+      setSaveError('Simpan profilmu terlebih dahulu sebelum mengonfirmasi ketersediaan.');
+      return;
+    }
+    setSaveError(null);
+    const res = await confirmAvailability(currentUser.id);
+    if (!res.success) {
+      setSaveError(res.error ?? 'Gagal mengonfirmasi ketersediaan.');
+      return;
+    }
     setFormData((prev) => ({
       ...prev,
       availabilityConfirmedAt: new Date().toISOString(),
@@ -364,6 +381,12 @@ export const ProfileAndCV: React.FC = () => {
               )}
             </div>
 
+            {saveError && (
+              <div role="alert" className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700">
+                {saveError}
+              </div>
+            )}
+
             {/* Identitas Terverifikasi */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
@@ -388,7 +411,7 @@ export const ProfileAndCV: React.FC = () => {
                 <label className="block font-bold text-[#242424] mb-1">Program & Batch</label>
                 <input
                   type="text"
-                  value={`${formData.program} - ${formData.batch}`}
+                  value={formData.program ? `${formData.program} - ${formData.batch}` : 'Sesuai data roster alumni'}
                   disabled
                   className="w-full p-2.5 rounded-lg border border-[#D9D9D9] bg-[#F7F7F7] text-[#595959] cursor-not-allowed"
                 />
@@ -518,6 +541,41 @@ export const ProfileAndCV: React.FC = () => {
                       </button>
                     </span>
                   ))}
+                </div>
+              </div>
+
+              {/* Work Types */}
+              <div>
+                <label className="block font-bold text-[#242424] mb-1">
+                  Jenis Pekerjaan <span className="text-[#BD214C]">*</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {(
+                    [
+                      ['full_time', 'Full Time'],
+                      ['contract', 'Kontrak'],
+                      ['internship', 'Magang'],
+                      ['freelance', 'Freelance'],
+                      ['part_time', 'Part Time'],
+                    ] as [WorkType, string][]
+                  ).map(([type, label]) => {
+                    const active = formData.targetWorkTypes.includes(type);
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => toggleWorkType(type)}
+                        aria-pressed={active}
+                        className={`px-3 py-1.5 rounded-lg border text-xs font-semibold ${
+                          active
+                            ? 'bg-[#BD214C] text-white border-[#BD214C]'
+                            : 'bg-white text-[#595959] border-[#D9D9D9]'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

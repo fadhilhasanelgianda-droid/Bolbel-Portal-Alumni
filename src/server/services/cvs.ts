@@ -8,6 +8,12 @@ export async function listCvs(ownerId: string): Promise<CVDocument[]> {
   return rowsTo<CVDocument>(rows);
 }
 
+/** Admin view for candidate search: each alumnus's current active CV (the only one the UI uses). */
+export async function listAllCvs(): Promise<CVDocument[]> {
+  const { rows } = await query('SELECT * FROM cv_documents WHERE is_current_active ORDER BY uploaded_at DESC');
+  return rowsTo<CVDocument>(rows);
+}
+
 export async function setActiveCv(ownerId: string, cvId: string): Promise<void> {
   await tx(async (client) => {
     const { rowCount } = await client.query('SELECT 1 FROM cv_documents WHERE id = $1 AND owner_id = $2 FOR UPDATE', [

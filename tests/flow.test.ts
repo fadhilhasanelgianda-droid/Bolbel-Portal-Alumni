@@ -164,6 +164,32 @@ describe('pipeline, consent and audit trail', () => {
     assert.ok(alumniEvents.every((e) => !('internalNotes' in e)));
   });
 
+  test('listAllEvents scopes to own processes and strips internal notes for alumni', async () => {
+    const admin = await makeUser('admin', 'Admin Events');
+    const udin = await makeUser('alumni', 'Udin Events');
+    const vina = await makeUser('alumni', 'Vina Events');
+    for (const u of [udin, vina]) {
+      await profiles.upsertProfile(u.id, profileInput);
+      await makeCv(u);
+    }
+    const company = await makeCompany();
+    const a = await processes.applyViaBolBel(udin, await makeJob(company), true);
+    const b = await processes.applyViaBolBel(vina, await makeJob(company), true);
+    await processes.forwardToCompany(admin, a.processId, { internalNotes: 'RAHASIA-UDIN' });
+
+    const udinEvents = await processes.listAllEvents(udin);
+    assert.ok(udinEvents.length >= 2);
+    assert.ok(udinEvents.every((e) => e.processId === a.processId), 'only own process events');
+    assert.ok(udinEvents.every((e) => !('internalNotes' in e)));
+
+    const adminEvents = await processes.listAllEvents(admin);
+    assert.ok(adminEvents.some((e) => e.processId === b.processId), 'admin sees everyone');
+    assert.ok(adminEvents.some((e) => e.internalNotes === 'RAHASIA-UDIN'));
+
+    // admin-wide CV listing used by candidate search
+    assert.ok((await cvs.listAllCvs()).some((c) => c.ownerId === vina.id));
+  });
+
   test('stale expectedVersion is rejected (optimistic lock)', async () => {
     const admin = await makeUser('admin', 'Admin C');
     const fani = await makeUser('alumni', 'Fani Version');

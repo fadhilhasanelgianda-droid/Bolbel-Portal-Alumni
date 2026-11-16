@@ -21,6 +21,7 @@ export const FollowUpTasks: React.FC = () => {
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'due_today' | 'overdue' | 'completed'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   // New task form state
   const [newTitle, setNewTitle] = useState('');
@@ -44,18 +45,23 @@ export const FollowUpTasks: React.FC = () => {
     return true;
   });
 
-  const handleCreateTask = (e: React.FormEvent) => {
+  const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle) return;
 
-    createFollowUpTask({
+    const res = await createFollowUpTask({
       title: newTitle,
       description: newDesc,
       taskType: newType,
       ownerName: newOwner,
       dueAt: newDueDate,
     });
+    if (!res.success) {
+      setCreateError(res.error ?? 'Gagal membuat tugas.');
+      return;
+    }
 
+    setCreateError(null);
     setShowAddModal(false);
     setNewTitle('');
     setNewDesc('');
@@ -223,6 +229,12 @@ export const FollowUpTasks: React.FC = () => {
               </span>
               <h3 className="text-lg font-bold text-[#242424] mt-0.5">Tambah Catatan Tugas Admin</h3>
             </div>
+
+            {createError && (
+              <div role="alert" className="mb-3 p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700">
+                {createError}
+              </div>
+            )}
 
             <form onSubmit={handleCreateTask} className="space-y-3.5 text-xs">
               <div>

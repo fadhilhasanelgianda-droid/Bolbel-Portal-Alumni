@@ -20,7 +20,14 @@ export const taskInputSchema = z.object({
 export const taskStatusSchema = z.object({ completed: z.boolean() });
 
 export async function listTasks(): Promise<FollowUpTask[]> {
-  const { rows } = await query(`SELECT * FROM follow_up_tasks ORDER BY status DESC, due_at`);
+  // Every open task (most overdue first, capped) plus only the most recent completed ones: the completed
+  // history grows forever and is never shown in full.
+  const { rows } = await query(
+    `(SELECT * FROM follow_up_tasks WHERE status = 'pending' ORDER BY due_at LIMIT 1000)
+     UNION ALL
+     (SELECT * FROM follow_up_tasks WHERE status = 'completed' ORDER BY completed_at DESC LIMIT 100)
+     ORDER BY status DESC, due_at`
+  );
   return rowsTo<FollowUpTask>(rows);
 }
 

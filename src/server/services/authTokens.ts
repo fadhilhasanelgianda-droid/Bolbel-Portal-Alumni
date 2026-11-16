@@ -1,8 +1,8 @@
-import bcrypt from 'bcryptjs';
 import { createHash, randomBytes } from 'node:crypto';
 import type pg from 'pg';
 import { query, tx } from '../db.ts';
 import { HttpError } from '../http.ts';
+import { hashPassword } from '../password.ts';
 import { appUrl, sendMail } from '../mailer.ts';
 
 const ACTIVATE_TTL_HOURS = 72;
@@ -92,7 +92,7 @@ async function consume(client: pg.PoolClient, token: string, purpose: 'activate'
 /** Creates the account for the roster entry the token was issued to. Email comes from the roster, never the client. */
 export async function activateWithToken(token: string, password: string): Promise<string> {
   if (!(await peek(token, 'activate'))) throw new HttpError(400, INVALID);
-  const passwordHash = await bcrypt.hash(password, 12); // after the cheap check, before the transaction
+  const passwordHash = await hashPassword(password); // after the cheap check, before the transaction
   return tx(async (client) => {
     const t = await consume(client, token, 'activate');
     const { rows } = await client.query(
@@ -115,7 +115,7 @@ export async function activateWithToken(token: string, password: string): Promis
 /** Sets the new password and ends every existing session of that user. */
 export async function resetWithToken(token: string, password: string): Promise<void> {
   if (!(await peek(token, 'reset'))) throw new HttpError(400, INVALID);
-  const passwordHash = await bcrypt.hash(password, 12);
+  const passwordHash = await hashPassword(password);
   await tx(async (client) => {
     const t = await consume(client, token, 'reset');
     const { rowCount } = await client.query('UPDATE users SET password_hash = $2 WHERE id = $1 AND active', [

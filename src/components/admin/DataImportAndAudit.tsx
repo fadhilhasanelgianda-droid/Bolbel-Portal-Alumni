@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useDataStore } from '../../domain/dataStore.tsx';
 import { parseAndValidateRosterCsv, formatDateIndo } from '../../domain/stateMachine.ts';
-import type { CsvRosterImportRow } from '../../domain/types.ts';
+import type { CsvRosterImportRow, EligibilityStatus } from '../../domain/types.ts';
 
 const SAMPLE_CSV = `Email,Nama Lengkap,Program,Batch,Eligibility
 hendra.wijaya@alumni.com,Hendra Wijaya,Full Course,Batch 12,eligible
@@ -40,21 +40,25 @@ export const DataImportAndAudit: React.FC = () => {
     setImportSuccessMsg(null);
   };
 
-  const handleCommitImport = () => {
+  const handleCommitImport = async () => {
     const validRows = parsedRows.filter((r) => r.isValid && !r.isDuplicate);
     if (validRows.length === 0) return;
 
-    const count = importRosterBatch(
+    const count = await importRosterBatch(
       validRows.map((r) => ({
         email: r.email,
         fullName: r.fullName,
-        program: r.program as any,
+        program: r.program,
         batch: r.batch,
-        eligibility: r.eligibility as any,
+        eligibility: r.eligibility as EligibilityStatus,
       }))
     );
 
-    setImportSuccessMsg(`Berhasil mengimpor ${count} alumni baru ke dalam roster terverifikasi.`);
+    setImportSuccessMsg(
+      count > 0
+        ? `Berhasil mengimpor ${count} alumni baru ke dalam roster terverifikasi.`
+        : 'Tidak ada alumni baru yang ditambahkan (semua sudah terdaftar, atau terjadi kesalahan).'
+    );
     // Re-validate against new roster
     setTimeout(() => {
       handleParseCsv();

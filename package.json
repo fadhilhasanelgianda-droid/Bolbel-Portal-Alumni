@@ -11,10 +11,13 @@
     "test": "node --test src/domain/*.test.ts",
     "db:migrate": "tsx --env-file-if-exists=.env scripts/migrate.ts",
     "db:seed-admin": "tsx --env-file-if-exists=.env scripts/seed-admin.ts",
-    "test:integration": "tsx --test --test-concurrency=1 tests/*.test.ts"
+    "test:integration": "tsx --test --test-concurrency=1 tests/*.test.ts",
+    "db:dev": "tsx scripts/dev-db.ts",
+    "db:seed-demo": "tsx --env-file-if-exists=.env scripts/seed-demo.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
+    "@node-rs/bcrypt": "^2.0.0",
     "@tailwindcss/postcss": "^4.3.3",
     "bcryptjs": "^3.0.3",
     "lucide-react": "^0.546.0",

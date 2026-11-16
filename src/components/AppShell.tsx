@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useSyncExternalStore } from 'react';
-import { DataStoreProvider, useDataStore } from '../domain/dataStore.tsx';
+import React, { useState } from 'react';
+import { useDataStore } from '../domain/dataStore.tsx';
+import { AuthGate } from './auth/AuthGate.tsx';
 import { Navbar } from './Navbar.tsx';
 import { JobList } from './alumni/JobList.tsx';
 import { MyApplications } from './alumni/MyApplications.tsx';
@@ -65,16 +66,10 @@ const AppContent: React.FC = () => {
   );
 };
 
-const subscribeNoop = () => () => {};
-
 export function AppShell() {
-  // The prototype store reads localStorage on init, so only render after hydration
-  // to avoid a server/client mismatch. Goes away once the store talks to the API.
-  const mounted = useSyncExternalStore(subscribeNoop, () => true, () => false);
-  if (!mounted) return null;
   return (
-    <DataStoreProvider>
+    <AuthGate>
       <AppContent />
-    </DataStoreProvider>
+    </AuthGate>
   );
 }

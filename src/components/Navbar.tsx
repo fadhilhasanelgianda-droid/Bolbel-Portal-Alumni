@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import {
   Briefcase,
   UserCheck,
@@ -15,11 +16,9 @@ import {
   Menu,
   X,
   Bell,
-  RefreshCw,
-  ShieldCheck,
+  LogOut,
 } from 'lucide-react';
 import { useDataStore } from '../domain/dataStore.tsx';
-import type { UserRole } from '../domain/types.ts';
 
 interface NavbarProps {
   currentTab: string;
@@ -27,7 +26,7 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => {
-  const { currentUser, switchUserRole, users, processes, tasks, resetAllToSeed } = useDataStore();
+  const { currentUser, logout, processes, tasks } = useDataStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
 
@@ -69,25 +68,6 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
 
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-[#D9D9D9] shadow-xs">
-      {/* Top Banner for Demo & Role Notice */}
-      <div className="bg-[#F9EDDE] text-[#242424] px-4 py-1.5 text-xs font-medium border-b border-[#E8D6BF] flex items-center justify-between">
-        <div className="flex items-center gap-2 max-w-4xl mx-auto w-full">
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#BD214C]/10 text-[#BD214C] font-semibold text-[11px]">
-            <ShieldCheck className="w-3.5 h-3.5" /> MVP Prototype
-          </span>
-          <span className="hidden sm:inline text-[#595959]">
-            Portal Karier Alumni Boleh Belajar — Beroperasi dengan 2 peran: Alumni & Admin (Gifari).
-          </span>
-          <button
-            onClick={resetAllToSeed}
-            className="ml-auto flex items-center gap-1 text-[11px] text-[#595959] hover:text-[#BD214C] underline transition-colors"
-            title="Kembalikan data ke kondisi awal"
-          >
-            <RefreshCw className="w-3 h-3" /> Reset Data Demo
-          </button>
-        </div>
-      </div>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Brand Logo */}
@@ -96,13 +76,15 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
               onClick={() => setCurrentTab(currentUser.role === 'admin' ? 'admin-dashboard' : 'jobs')}
               className="flex items-center gap-2.5 text-left focus:outline-hidden"
             >
-              <div className="w-9 h-9 rounded-lg bg-[#BD214C] flex items-center justify-center text-white font-bold text-lg shadow-xs">
-                BB
-              </div>
-              <div>
-                <span className="font-bold text-[#BD214C] text-lg leading-tight tracking-tight block">
-                  Boleh Belajar
-                </span>
+              <Image
+                src="/brand/boleh-belajar-logo.png"
+                alt="Boleh Belajar"
+                width={135}
+                height={34}
+                fetchPriority="high"
+                className="h-8 w-auto"
+              />
+              <div className="hidden sm:block">
                 <span className="text-[11px] text-[#595959] tracking-wider uppercase font-semibold block">
                   Portal Karier Alumni
                 </span>
@@ -178,54 +160,22 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
               </button>
 
               {roleDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-72 rounded-xl bg-white border border-[#D9D9D9] shadow-lg py-2 z-50">
-                  <div className="px-3 py-2 border-b border-[#D9D9D9] bg-[#F7F7F7]">
-                    <div className="text-xs font-semibold text-[#595959] uppercase tracking-wider">
-                      Simulasi Sesi Pengguna
-                    </div>
-                    <div className="text-xs text-[#242424] mt-0.5">
-                      Pilih peran untuk menguji pengalaman aplikasi:
-                    </div>
+                <div className="absolute right-0 mt-2 w-64 rounded-xl bg-white border border-[#D9D9D9] shadow-lg py-2 z-50">
+                  <div className="px-3 py-2 border-b border-[#D9D9D9]">
+                    <div className="text-xs font-semibold text-[#242424]">{currentUser.fullName}</div>
+                    <div className="text-[11px] text-[#595959] truncate">{currentUser.email}</div>
                   </div>
-
-                  <div className="p-1 space-y-1">
-                    {users.map((u) => {
-                      const isCurrent = u.id === currentUser.id;
-                      return (
-                        <button
-                          key={u.id}
-                          onClick={() => {
-                            switchUserRole(u.role, u.id);
-                            setRoleDropdownOpen(false);
-                            if (u.role === 'admin') {
-                              setCurrentTab('admin-dashboard');
-                            } else {
-                              setCurrentTab('jobs');
-                            }
-                          }}
-                          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-xs transition-colors ${
-                            isCurrent
-                              ? 'bg-[#F9EDDE] text-[#242424] font-semibold'
-                              : 'hover:bg-[#F7F7F7] text-[#595959]'
-                          }`}
-                        >
-                          <div>
-                            <div className="font-medium text-[#242424] flex items-center gap-1.5">
-                              {u.fullName}
-                              {isCurrent && <span className="text-[10px] text-[#BD214C]">✓ Aktif</span>}
-                            </div>
-                            <div className="text-[11px] text-[#595959]">{u.email}</div>
-                          </div>
-                          <span
-                            className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
-                              u.role === 'admin' ? 'bg-[#EA5543] text-white' : 'bg-[#BD214C] text-white'
-                            }`}
-                          >
-                            {u.role}
-                          </span>
-                        </button>
-                      );
-                    })}
+                  <div className="p-1">
+                    <button
+                      onClick={() => {
+                        setRoleDropdownOpen(false);
+                        void logout();
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-xs font-medium text-[#595959] hover:bg-[#F7F7F7] hover:text-[#BD214C] transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Keluar
+                    </button>
                   </div>
                 </div>
               )}

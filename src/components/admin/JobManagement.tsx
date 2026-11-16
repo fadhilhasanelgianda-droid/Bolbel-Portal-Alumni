@@ -49,6 +49,15 @@ export const JobManagement: React.FC = () => {
   const [newExternalUrl, setNewExternalUrl] = useState('');
   const [newDeadline, setNewDeadline] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
+  const [companyError, setCompanyError] = useState<string | null>(null);
+  const [closeError, setCloseError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const changeStatus = async (jobId: string, status: Job['status'], reason?: string) => {
+    const res = await updateJobStatus(jobId, status, reason);
+    setActionError(res.success ? null : (res.error ?? 'Gagal mengubah status lowongan.'));
+    return res;
+  };
 
   // Add Company Form State
   const [compName, setCompName] = useState('');
@@ -60,7 +69,7 @@ export const JobManagement: React.FC = () => {
 
   const filteredJobs = jobs.filter((j) => (statusFilter === 'all' ? true : j.status === statusFilter));
 
-  const handleCreateJob = (e: React.FormEvent) => {
+  const handleCreateJob = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
@@ -85,7 +94,7 @@ export const JobManagement: React.FC = () => {
       .map((r) => r.trim())
       .filter((r) => r.length > 0);
 
-    addJob({
+    const res = await addJob({
       companyId: comp.id,
       companyName: comp.name,
       title: newJobTitle,
@@ -107,7 +116,12 @@ export const JobManagement: React.FC = () => {
       processOwner: 'Gifari',
       deadlineDate: newDeadline || undefined,
     });
+    if (!res.success) {
+      setFormError(res.error ?? 'Gagal menyimpan lowongan.');
+      return;
+    }
 
+    setFormError(null);
     setShowAddJobModal(false);
     // Reset fields
     setNewJobTitle('');
@@ -116,11 +130,11 @@ export const JobManagement: React.FC = () => {
     setNewRequirements('');
   };
 
-  const handleCreateCompany = (e: React.FormEvent) => {
+  const handleCreateCompany = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!compName) return;
 
-    addCompany({
+    const res = await addCompany({
       name: compName,
       industry: compIndustry || 'Teknologi & Digital',
       websiteUrl: compWebsite || undefined,
@@ -129,7 +143,12 @@ export const JobManagement: React.FC = () => {
       internalPicContact: compContact || undefined,
       internalNotes: compNotes || undefined,
     });
+    if (!res.success) {
+      setCompanyError(res.error ?? 'Gagal menyimpan company.');
+      return;
+    }
 
+    setCompanyError(null);
     setShowAddCompanyModal(false);
     setCompName('');
     setCompIndustry('');
@@ -139,16 +158,27 @@ export const JobManagement: React.FC = () => {
     setCompNotes('');
   };
 
-  const handleCloseJobSubmit = (e: React.FormEvent) => {
+  const handleCloseJobSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!closingJob || !closeReason) return;
-    updateJobStatus(closingJob.id, 'closed', closeReason);
+    const res = await changeStatus(closingJob.id, 'closed', closeReason);
+    if (!res.success) {
+      setCloseError(res.error ?? 'Gagal menutup lowongan.');
+      return;
+    }
+    setCloseError(null);
     setClosingJob(null);
     setCloseReason('');
   };
 
   return (
     <div className="space-y-6">
+      {actionError && (
+        <div role="alert" className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700">
+          {actionError}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -273,7 +303,7 @@ export const JobManagement: React.FC = () => {
                     <td className="px-4 py-3.5 text-right space-x-1 whitespace-nowrap">
                       {job.status === 'published' && (
                         <button
-                          onClick={() => updateJobStatus(job.id, 'paused')}
+                          onClick={() => changeStatus(job.id, 'paused')}
                           className="px-2 py-1 rounded border border-[#D9D9D9] hover:bg-stone-50 text-[11px] font-semibold text-[#595959]"
                           title="Jeda pendaftaran"
                         >
@@ -283,7 +313,7 @@ export const JobManagement: React.FC = () => {
 
                       {job.status === 'paused' && (
                         <button
-                          onClick={() => updateJobStatus(job.id, 'published')}
+                          onClick={() => changeStatus(job.id, 'published')}
                           className="px-2 py-1 rounded bg-emerald-600 text-white text-[11px] font-bold"
                           title="Buka kembali pendaftaran"
                         >
@@ -302,7 +332,7 @@ export const JobManagement: React.FC = () => {
 
                       {job.status === 'closed' && (
                         <button
-                          onClick={() => updateJobStatus(job.id, 'published')}
+                          onClick={() => changeStatus(job.id, 'published')}
                           className="px-2 py-1 rounded border border-[#D9D9D9] hover:bg-stone-50 text-[11px] font-semibold text-[#242424]"
                         >
                           Buka Ulang
@@ -562,6 +592,12 @@ export const JobManagement: React.FC = () => {
 
             <h3 className="text-lg font-bold text-[#242424]">Tambah Partner Company</h3>
 
+            {companyError && (
+              <div className="mb-3 p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700">
+                {companyError}
+              </div>
+            )}
+
             <form onSubmit={handleCreateCompany} className="space-y-3.5 text-xs">
               <div>
                 <label htmlFor="company-name-input" className="block font-bold text-[#242424] mb-1">
@@ -672,6 +708,12 @@ export const JobManagement: React.FC = () => {
                 Penutupan lowongan akan menolak pendaftaran baru di server. Berikan alasan penutupan resmi.
               </p>
             </div>
+
+            {closeError && (
+              <div className="mb-3 p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700">
+                {closeError}
+              </div>
+            )}
 
             <form onSubmit={handleCloseJobSubmit} className="space-y-4">
               <div>

@@ -16,12 +16,25 @@ const defaultTransport: Transport = async (mail) => {
   }
   const from = process.env.MAIL_FROM;
   if (!from) throw new Error('MAIL_FROM is not set');
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ from, to: mail.to, subject: mail.subject, text: mail.text }),
-  });
-  if (!res.ok) throw new Error(`Email provider returned ${res.status}`);
+  // Bounded wait + a couple of retries for transient failures (429 / 5xx / network); other 4xx are permanent
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 500 * 2 ** attempt));
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ from, to: mail.to, subject: mail.subject, text: mail.text }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (res.ok) return;
+      lastError = new Error(`Email provider returned ${res.status}`);
+      if (res.status !== 429 && res.status < 500) break;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError;
 };
 
 let transport: Transport = defaultTransport;

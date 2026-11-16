@@ -17,7 +17,7 @@ import {
   Lock,
   ArrowRight,
 } from 'lucide-react';
-import { useDataStore } from '../../domain/dataStore.tsx';
+import { useDataStore, useProcessEvents } from '../../domain/dataStore.tsx';
 import type {
   CandidateProcess,
   SelectionStage,
@@ -34,8 +34,6 @@ import {
 export const ProcessPipeline: React.FC = () => {
   const {
     processes,
-    events,
-    consents,
     updateCandidateStage,
     forwardCVToCompany,
   } = useDataStore();
@@ -72,11 +70,12 @@ export const ProcessPipeline: React.FC = () => {
 
   const activeProcess = processes.find((p) => p.id === selectedProcessId) || filteredProcesses[0] || null;
 
-  const activeEvents = events
-    .filter((e) => e.processId === activeProcess?.id)
-    .sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime());
+  const activeEvents = useProcessEvents(activeProcess);
 
-  const activeConsent = consents.find((c) => c.processId === activeProcess?.id && !c.revokedAt);
+  const activeConsent =
+    activeProcess?.consentGrantedAt && !activeProcess.consentRevokedAt
+      ? { policyVersion: activeProcess.consentPolicyVersion ?? '-', grantedAt: activeProcess.consentGrantedAt }
+      : null;
 
   const openUpdateModal = () => {
     if (!activeProcess) return;
