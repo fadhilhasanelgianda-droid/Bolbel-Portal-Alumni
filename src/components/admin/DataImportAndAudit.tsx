@@ -13,6 +13,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { useDataStore } from '../../domain/dataStore.tsx';
+import { shortRef } from '../../domain/labels.ts';
 import { parseAndValidateRosterCsv, formatDateIndo } from '../../domain/stateMachine.ts';
 import type { CsvRosterImportRow, EligibilityStatus } from '../../domain/types.ts';
 import { RosterManager } from './RosterManager.tsx';
@@ -120,7 +121,7 @@ export const DataImportAndAudit: React.FC = () => {
               : 'text-[#595959] hover:bg-[#F7F7F7]'
           }`}
         >
-          Log Persetujuan (Consent Audit)
+          Log Persetujuan (Audit)
         </button>
       </div>
 
@@ -266,7 +267,7 @@ export const DataImportAndAudit: React.FC = () => {
             <table className="w-full text-left text-xs text-[#242424]">
               <thead className="bg-[#F7F7F7] border-b border-[#D9D9D9] text-[#595959] uppercase tracking-wider font-semibold">
                 <tr>
-                  <th className="px-4 py-3">ID Consent</th>
+                  <th className="px-4 py-3">Kode Persetujuan</th>
                   <th className="px-4 py-3">Lowongan &amp; Company</th>
                   <th className="px-4 py-3">Dokumen CV Terkunci</th>
                   <th className="px-4 py-3">Versi Kebijakan</th>
@@ -278,13 +279,13 @@ export const DataImportAndAudit: React.FC = () => {
                 {consents.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-4 py-6 text-center text-[#595959] italic">
-                      Belum ada consent tercatat.
+                      Belum ada persetujuan tercatat.
                     </td>
                   </tr>
                 ) : (
                   consents.map((c) => (
                     <tr key={c.id} className="hover:bg-[#F9EDDE]/20 transition-colors">
-                      <td className="px-4 py-3 font-mono text-xs">{c.id}</td>
+                      <td className="px-4 py-3 font-mono text-xs" title={c.id}>{shortRef(c.id)}</td>
                       <td className="px-4 py-3 font-medium">
                         {c.jobTitle} <span className="text-[#595959]">({c.companyName})</span>
                       </td>

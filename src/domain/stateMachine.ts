@@ -75,7 +75,7 @@ export const OUTCOME_CONFIG: Record<
   mengundurkan_diri: { label: 'Mengundurkan Diri', isTerminal: true, badgeColor: 'bg-amber-50 text-amber-700 border-amber-200' },
   menolak_offer: { label: 'Menolak Offer', isTerminal: true, badgeColor: 'bg-purple-50 text-purple-700 border-purple-200' },
   dibatalkan_company: { label: 'Dibatalkan Company', isTerminal: true, badgeColor: 'bg-stone-100 text-stone-700 border-stone-200' },
-  tidak_menyetujui_pengajuan: { label: 'Pengajuan Ditolak Alumni', isTerminal: true, badgeColor: 'bg-stone-100 text-stone-700 border-stone-200' },
+  tidak_menyetujui_pengajuan: { label: 'Rekomendasi Ditolak Alumni', isTerminal: true, badgeColor: 'bg-stone-100 text-stone-700 border-stone-200' },
   selesai_mulai_kerja: { label: 'Selesai & Mulai Kerja', isTerminal: true, badgeColor: 'bg-blue-50 text-blue-700 border-blue-200' },
 };
 

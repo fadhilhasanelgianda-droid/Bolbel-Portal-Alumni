@@ -55,7 +55,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             Dashboard Operasional Gifari (Talent Lead)
           </span>
           <h1 className="text-2xl font-bold text-[#242424] tracking-tight">
-            Ringkasan Talent &amp; Lowongan Boleh Belajar
+            Ringkasan Kandidat &amp; Lowongan Boleh Belajar
           </h1>
           <p className="text-xs sm:text-sm text-[#595959] mt-0.5">
             Pantau beban kerja harian, proses seleksi yang membutuhkan tindak lanjut, dan profil alumni yang perlu dikonfirmasi.

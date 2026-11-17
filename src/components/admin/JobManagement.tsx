@@ -82,7 +82,7 @@ export const JobManagement: React.FC = () => {
     }
 
     if (newChannel === 'external' && !newExternalUrl) {
-      setFormError('Untuk jalur Apply Eksternal, URL aplikasi wajib diisi.');
+      setFormError('Untuk jalur lamaran di situs company, URL halaman lamaran wajib diisi.');
       return;
     }
 
@@ -232,7 +232,7 @@ export const JobManagement: React.FC = () => {
             <thead className="bg-[#F7F7F7] border-b border-[#D9D9D9] text-[#595959] uppercase tracking-wider font-semibold">
               <tr>
                 <th className="px-4 py-3">Posisi &amp; Company</th>
-                <th className="px-4 py-3">Jalur Apply</th>
+                <th className="px-4 py-3">Jalur Lamaran</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Kompensasi</th>
                 <th className="px-4 py-3">Tenggat</th>
@@ -460,7 +460,7 @@ export const JobManagement: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-[#F7F7F7]">
                 <div>
                   <label htmlFor="create-job-channel" className="block font-bold text-[#242424] mb-1">
-                    Jalur Apply <span className="text-[#BD214C]">*</span>
+                    Jalur Lamaran <span className="text-[#BD214C]">*</span>
                   </label>
                   <select
                     id="create-job-channel"
@@ -469,7 +469,7 @@ export const JobManagement: React.FC = () => {
                     className="w-full p-2.5 rounded-lg border border-[#D9D9D9] text-[#242424] bg-white focus:outline-hidden focus:border-[#BD214C]"
                   >
                     <option value="bolbel">Melalui BolBel (Tersimpan di Portal)</option>
-                    <option value="external">Apply Eksternal (Situs Company)</option>
+                    <option value="external">Lamar di Situs Company</option>
                   </select>
                 </div>
 
@@ -502,7 +502,7 @@ export const JobManagement: React.FC = () => {
               {newChannel === 'external' && (
                 <div>
                   <label htmlFor="create-job-external-url" className="block font-bold text-[#242424] mb-1">
-                    URL Halaman Apply Eksternal (HTTPS) <span className="text-[#BD214C]">*</span>
+                    URL Halaman Lamaran di Situs Company (HTTPS) <span className="text-[#BD214C]">*</span>
                   </label>
                   <input
                     id="create-job-external-url"

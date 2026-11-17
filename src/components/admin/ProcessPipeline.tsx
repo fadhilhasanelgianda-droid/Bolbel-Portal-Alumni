@@ -18,6 +18,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { useDataStore, useProcessEvents } from '../../domain/dataStore.tsx';
+import { shortRef } from '../../domain/labels.ts';
 import type {
   CandidateProcess,
   SelectionStage,
@@ -248,7 +249,7 @@ export const ProcessPipeline: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#D9D9D9]">
               <div>
                 <span className="text-xs text-[#595959]">
-                  ID Proses: <span className="font-mono">{activeProcess.id}</span> (Versi: {activeProcess.version})
+                  Kode proses: <span className="font-mono" title={activeProcess.id}>{shortRef(activeProcess.id)}</span> (Versi: {activeProcess.version})
                 </span>
                 <h2 className="text-xl font-bold text-[#242424] mt-0.5">{activeProcess.alumniName}</h2>
                 <div className="text-xs font-semibold text-[#595959] mt-0.5">
@@ -283,7 +284,7 @@ export const ProcessPipeline: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div className="p-3.5 rounded-xl bg-[#F7F7F7] border border-[#D9D9D9] space-y-1">
                 <span className="text-[#595959] block font-semibold text-xs uppercase tracking-wider">
-                  Status Persetujuan (Consent)
+                  Status Persetujuan
                 </span>
                 {activeConsent ? (
                   <div className="text-emerald-700 font-bold flex items-center gap-1.5">
@@ -314,7 +315,7 @@ export const ProcessPipeline: React.FC = () => {
                   </span>
                 </div>
                 <span className="text-xs text-[#595959] block">
-                  ID Versi: {activeProcess.documentVersionId}
+                  Versi CV: <span className="font-mono" title={activeProcess.documentVersionId}>{shortRef(activeProcess.documentVersionId)}</span>
                 </span>
               </div>
             </div>
@@ -555,7 +556,7 @@ export const ProcessPipeline: React.FC = () => {
             </div>
 
             <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 space-y-1">
-              <strong className="block font-bold">Pemeriksaan Persetujuan (Consent Active):</strong>
+              <strong className="block font-bold">Pemeriksaan Persetujuan:</strong>
               <p>
                 Alumni telah memberikan persetujuan eksplisit untuk posisi ini dengan CV versi{' '}
                 <span className="font-semibold">{activeProcess.documentName}</span>.

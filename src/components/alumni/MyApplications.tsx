@@ -18,6 +18,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { useDataStore, useProcessEvents } from '../../domain/dataStore.tsx';
+import { shortRef } from '../../domain/labels.ts';
 import type { CandidateProcess, SelectionStage, ProcessOutcome } from '../../domain/types.ts';
 import {
   STAGE_CONFIG,
@@ -64,7 +65,7 @@ export const MyApplications: React.FC = () => {
   const handleApproveProposal = async (procId: string) => {
     setIsProcessing(true);
     const res = await approveAdminProposal(procId);
-    setActionError(res.success ? null : (res.error ?? 'Gagal menyetujui pengajuan.'));
+    setActionError(res.success ? null : (res.error ?? 'Gagal menyetujui rekomendasi.'));
     setIsProcessing(false);
   };
 
@@ -72,7 +73,7 @@ export const MyApplications: React.FC = () => {
     if (!window.confirm('Tolak peluang ini? CV kamu tidak akan diteruskan ke company, dan keputusan ini tidak bisa diubah.')) return;
     setIsProcessing(true);
     const res = await rejectAdminProposal(procId);
-    setActionError(res.success ? null : (res.error ?? 'Gagal menolak pengajuan.'));
+    setActionError(res.success ? null : (res.error ?? 'Gagal menolak rekomendasi.'));
     setIsProcessing(false);
   };
 
@@ -125,7 +126,7 @@ export const MyApplications: React.FC = () => {
             </span>
             <div>
               <h3 className="font-bold text-base text-[#242424]">
-                Permintaan Persetujuan Pengajuan Rekomendasi ({pendingProposals.length})
+                Permintaan Persetujuan Rekomendasi ({pendingProposals.length})
               </h3>
               <p className="text-xs text-[#595959]">
                 Admin BolBel menemukan lowongan yang cocok dengan profilmu dan meminta izin sebelum CV kamu
@@ -234,7 +235,7 @@ export const MyApplications: React.FC = () => {
                       {proc.origin === 'internal_apply'
                         ? 'Via BolBel'
                         : proc.origin === 'external_report'
-                        ? 'Apply Eksternal'
+                        ? 'Lamar di Situs Company'
                         : 'Rekomendasi Admin'}
                     </span>
                   </div>
@@ -258,7 +259,7 @@ export const MyApplications: React.FC = () => {
                       {OUTCOME_CONFIG[activeProcess.outcome]?.label}
                     </span>
                     <span className="text-xs text-[#595959]">
-                      ID: <span className="font-mono">{activeProcess.id}</span>
+                      Kode lamaran: <span className="font-mono" title={activeProcess.id}>{shortRef(activeProcess.id)}</span>
                     </span>
                   </div>
                   <h2 className="text-xl font-bold text-[#242424]">{activeProcess.jobTitle}</h2>
@@ -389,7 +390,7 @@ export const MyApplications: React.FC = () => {
             <div className="my-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 space-y-1">
               <strong className="block font-bold">Ketentuan Penarikan Diri:</strong>
               <p>
-                Sistem akan mencatat pencabutan persetujuan (consent) dan memblokir pengiriman berkas baru. Berkas
+                Sistem akan mencatat pencabutan persetujuan dan memblokir pengiriman berkas baru. Berkas
                 yang telah terlanjur dikirimkan ke pihak company tidak dapat ditarik otomatis, namun Gifari akan
                 memberitahu PIC company.
               </p>

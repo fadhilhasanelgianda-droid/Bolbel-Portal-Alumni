@@ -191,7 +191,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                 rel="noreferrer"
                 className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-[#BD214C] hover:bg-[#a61b42] text-white text-sm font-bold flex items-center justify-center gap-1.5"
               >
-                Buka Link Apply <ExternalLink className="w-4 h-4" />
+                Buka Halaman Lamaran <ExternalLink className="w-4 h-4" />
               </a>
             </div>
           )}

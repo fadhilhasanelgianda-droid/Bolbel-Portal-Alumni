@@ -313,12 +313,12 @@ export async function approveProposal(user: SessionUser, processId: string) {
       newStage: 'masuk_bolbel',
       actor: actorOf(user),
       sourceType: 'alumni_report',
-      publicMessage: 'Persetujuan pengajuan diberikan. Tim BolBel siap meneruskan CV ke company.',
+      publicMessage: 'Persetujuan rekomendasi diberikan. Tim BolBel siap meneruskan CV ke company.',
     });
     await insertTask(client, {
       processId, jobId: proc.jobId, alumniId: proc.alumniId,
       title: `Kirimkan CV ${proc.alumniName} ke ${proc.companyName}`,
-      description: 'Alumni telah menyetujui pengajuan. Kirimkan CV via email ke PIC.',
+      description: 'Alumni telah menyetujui rekomendasi. Kirimkan CV via email ke PIC.',
       taskType: 'forward_cv', ownerName: job.processOwner, dueAt: addDays(1),
     });
   });
@@ -332,7 +332,7 @@ export async function rejectProposal(user: SessionUser, processId: string, reaso
     const proc = await lockProcess(client, processId);
     ownedBy(user, proc);
     if (proc.currentStage !== 'menunggu_persetujuan' || proc.outcome !== 'aktif') {
-      throw new HttpError(409, 'Pengajuan ini tidak lagi menunggu persetujuan.');
+      throw new HttpError(409, 'Rekomendasi ini tidak lagi menunggu persetujuan.');
     }
     await updateProcess(client, processId, { outcome: 'tidak_menyetujui_pengajuan' });
     await insertEvent(client, {
@@ -344,7 +344,7 @@ export async function rejectProposal(user: SessionUser, processId: string, reaso
       newOutcome: 'tidak_menyetujui_pengajuan',
       actor: actorOf(user),
       sourceType: 'alumni_report',
-      publicMessage: `Kandidat memilih untuk tidak melanjutkan penawaran ini: ${reason || 'Alumni menolak penawaran peluang ini.'}`,
+      publicMessage: `Kandidat memilih untuk tidak melanjutkan rekomendasi ini: ${reason || 'Alumni menolak rekomendasi peluang ini.'}`,
     });
   });
 }
@@ -520,7 +520,7 @@ export async function createProposal(user: SessionUser, input: z.infer<typeof pr
     const profile = await getProfile(input.alumniId, client);
     if (!profile) throw new HttpError(404, 'Profil alumni tidak ditemukan.');
     if (!profile.allowProactiveContact) {
-      throw new HttpError(409, 'Alumni ini tidak mengaktifkan izin penawaran proaktif. Alumni hanya dapat melamar mandiri.');
+      throw new HttpError(409, 'Alumni ini tidak mengaktifkan izin rekomendasi proaktif. Alumni hanya dapat melamar mandiri.');
     }
     const job = await getJobTx(client, input.jobId);
     if (job.status !== 'published') throw new HttpError(409, 'Hanya lowongan yang dipublikasikan yang dapat diajukan.');
@@ -542,7 +542,7 @@ export async function createProposal(user: SessionUser, input: z.infer<typeof pr
       newStage: 'menunggu_persetujuan',
       actor: actorOf(user),
       sourceType: 'admin_official',
-      publicMessage: `Tim BolBel mengajukan penawaran posisi ${job.title} di ${job.companyName}. Menunggu persetujuan alumni.`,
+      publicMessage: `Tim BolBel merekomendasikan posisi ${job.title} di ${job.companyName}. Menunggu persetujuan alumni.`,
     });
     return { processId: rows[0].id as string };
   });

@@ -137,11 +137,11 @@ export const JobList: React.FC<{ onGoToProfile?: () => void; onGoToApplications?
               value={selectedChannel}
               onChange={(e) => setSelectedChannel(e.target.value)}
               className="px-3 py-2.5 rounded-lg border border-[#D9D9D9] text-sm text-[#242424] bg-white focus:outline-hidden focus:border-[#BD214C]"
-              aria-label="Filter jalur apply"
+              aria-label="Filter jalur lamaran"
             >
-              <option value="all">Semua Jalur Apply</option>
+              <option value="all">Semua Jalur Lamaran</option>
               <option value="bolbel">Melalui BolBel</option>
-              <option value="external">Apply Eksternal</option>
+              <option value="external">Lamar di Situs Company</option>
             </select>
 
             {(searchQuery || selectedModel !== 'all' || selectedType !== 'all' || selectedChannel !== 'all') && (
@@ -204,11 +204,11 @@ export const JobList: React.FC<{ onGoToProfile?: () => void; onGoToApplications?
                     >
                       {job.applyChannel === 'bolbel' ? (
                         <>
-                          <FileCheck className="w-3.5 h-3.5" /> Apply Melalui BolBel
+                          <FileCheck className="w-3.5 h-3.5" /> Lamar Lewat BolBel
                         </>
                       ) : (
                         <>
-                          <ExternalLink className="w-3.5 h-3.5" /> Apply Eksternal
+                          <ExternalLink className="w-3.5 h-3.5" /> Lamar di Situs Company
                         </>
                       )}
                     </span>

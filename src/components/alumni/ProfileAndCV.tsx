@@ -237,7 +237,7 @@ export const ProfileAndCV: React.FC = () => {
                 {freshness.isFresh
                   ? `Terakhir dikonfirmasi ${freshness.daysAgo} hari yang lalu (${formatDateIndo(
                       currentProfile?.availabilityConfirmedAt
-                    )}). Profilmu aktif diprioritaskan saat pencarian talent.`
+                    )}). Profilmu aktif diprioritaskan saat pencarian kandidat.`
                   : `Sudah ${freshness.daysAgo} hari kamu belum mengonfirmasi ketersediaan kerja. Harap perbarui agar tim BolBel mengetahui status ketersediaanmu.`}
               </p>
             </div>
@@ -504,16 +504,62 @@ export const ProfileAndCV: React.FC = () => {
                 <select
                   id="start-readiness-select"
                   value={formData.startReadiness}
-                  onChange={(e) =>
-                    setFormData({ ...formData, startReadiness: e.target.value as StartReadiness })
-                  }
+                  onChange={(e) => {
+                    const startReadiness = e.target.value as StartReadiness;
+                    setFormData({
+                      ...formData,
+                      startReadiness,
+                      noticePeriodDays: startReadiness === 'notice_period' ? formData.noticePeriodDays : undefined,
+                      targetStartDate: startReadiness === 'tanggal' ? formData.targetStartDate : undefined,
+                    });
+                  }}
                   className="w-full p-2.5 rounded-lg border border-[#D9D9D9] text-[#242424] bg-white focus:outline-hidden focus:border-[#BD214C]"
                 >
                   <option value="segera">Segera (Immediate)</option>
                   <option value="notice_period">Perlu Notice Period</option>
+                  <option value="tanggal">Mulai di Tanggal Tertentu</option>
                   <option value="diskusi">Perlu Diskusi Lebih Lanjut</option>
                 </select>
               </div>
+
+              {formData.startReadiness === 'notice_period' && (
+                <div>
+                  <label htmlFor="notice-period-input" className="block font-bold text-[#242424] mb-1">
+                    Lama Notice Period (hari)
+                  </label>
+                  <input
+                    id="notice-period-input"
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={365}
+                    placeholder="Contoh: 30"
+                    value={formData.noticePeriodDays ?? ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        noticePeriodDays: e.target.value === '' ? undefined : Math.min(365, Math.max(0, Math.trunc(Number(e.target.value)))),
+                      })
+                    }
+                    className="w-full p-2.5 rounded-lg border border-[#D9D9D9] text-[#242424] focus:outline-hidden focus:border-[#BD214C]"
+                  />
+                </div>
+              )}
+
+              {formData.startReadiness === 'tanggal' && (
+                <div>
+                  <label htmlFor="target-start-date-input" className="block font-bold text-[#242424] mb-1">
+                    Tanggal Mulai yang Diinginkan
+                  </label>
+                  <input
+                    id="target-start-date-input"
+                    type="date"
+                    value={formData.targetStartDate ?? ''}
+                    onChange={(e) => setFormData({ ...formData, targetStartDate: e.target.value || undefined })}
+                    className="w-full p-2.5 rounded-lg border border-[#D9D9D9] text-[#242424] focus:outline-hidden focus:border-[#BD214C]"
+                  />
+                </div>
+              )}
 
               <div>
                 <label htmlFor="experience-band-select" className="block font-bold text-[#242424] mb-1">Pengalaman Relevan yang Dilaporkan</label>
@@ -661,6 +707,63 @@ export const ProfileAndCV: React.FC = () => {
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="portfolio-url-input" className="block font-bold text-[#242424] mb-1">Tautan Portofolio (Opsional)</label>
+                  <input
+                    id="portfolio-url-input"
+                    type="url"
+                    placeholder="https://..."
+                    value={formData.portfolioUrl || ''}
+                    onChange={(e) => setFormData({ ...formData, portfolioUrl: e.target.value })}
+                    className="w-full p-2.5 rounded-lg border border-[#D9D9D9] text-[#242424] focus:outline-hidden focus:border-[#BD214C]"
+                  />
+                </div>
+              </div>
+
+              {/* Target locations */}
+              <div>
+                <label htmlFor="target-location-input" className="block font-bold text-[#242424] mb-1">
+                  Lokasi Kerja yang Dipertimbangkan (Opsional)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="target-location-input"
+                    type="text"
+                    placeholder="Contoh: Jakarta"
+                    value={locationInput}
+                    onChange={(e) => setLocationInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddLocation())}
+                    className="flex-1 p-2.5 rounded-lg border border-[#D9D9D9] text-[#242424] focus:outline-hidden focus:border-[#BD214C]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddLocation}
+                    className="px-4 py-2 bg-[#BD214C] text-white rounded-lg font-bold"
+                  >
+                    Tambah
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {formData.targetLocations.map((loc) => (
+                    <span
+                      key={loc}
+                      className="px-2.5 py-1 rounded-md bg-[#F9EDDE] border border-[#EADBCE] text-[#242424] font-medium flex items-center gap-1.5"
+                    >
+                      {loc}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveLocation(loc)}
+                        aria-label={`Hapus lokasi ${loc}`}
+                        className="text-[#595959] hover:text-rose-600 font-bold"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
               {/* Proactive Contact Toggle (FR07) */}
               <div className="p-3.5 rounded-xl border border-[#D9D9D9] bg-[#F7F7F7]">
                 <label className="flex items-start gap-3 cursor-pointer">
@@ -672,7 +775,7 @@ export const ProfileAndCV: React.FC = () => {
                   />
                   <div className="text-xs">
                     <span className="font-bold text-[#242424] block">
-                      Izinkan Penawaran Peluang Proaktif dari Tim BolBel
+                      Izinkan Rekomendasi Peluang Proaktif dari Tim BolBel
                     </span>
                     <span className="text-[#595959] block mt-0.5">
                       Jika aktif, Gifari dapat merekomendasikan profilmu ke lowongan yang relevan. Setiap rekomendasi

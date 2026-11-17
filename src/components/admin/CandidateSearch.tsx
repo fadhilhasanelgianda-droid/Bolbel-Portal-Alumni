@@ -21,6 +21,7 @@ import { useDataStore } from '../../domain/dataStore.tsx';
 import type { AlumniProfile, OpennessStatus, ExperienceBand, WorkModel } from '../../domain/types.ts';
 import { isProfileFresh, formatDateIndo, STAGE_CONFIG } from '../../domain/stateMachine.ts';
 import { Modal } from '../Modal.tsx';
+import { EXPERIENCE_BAND_LABEL, describeReadiness } from '../../domain/labels.ts';
 
 export const CandidateSearch: React.FC = () => {
   const { profiles, cvs, jobs, processes, createProactiveProposal } = useDataStore();
@@ -81,7 +82,7 @@ export const CandidateSearch: React.FC = () => {
       const res = await createProactiveProposal(proposingCandidate.userId, selectedJobId);
       if (res.success) {
         setProposalSuccess(
-          `Pengajuan berhasil dikirimkan ke akun ${proposingCandidate.fullName}. Status sekarang "Menunggu Persetujuan Alumni".`
+          `Rekomendasi berhasil dikirimkan ke akun ${proposingCandidate.fullName}. Status sekarang "Menunggu Persetujuan Alumni".`
         );
         setTimeout(() => {
           setProposingCandidate(null);
@@ -89,7 +90,7 @@ export const CandidateSearch: React.FC = () => {
           setProposalSuccess(null);
         }, 2500);
       } else {
-        setProposalError(res.error || 'Gagal membuat pengajuan.');
+        setProposalError(res.error || 'Gagal membuat rekomendasi.');
       }
     } catch {
       setProposalError('Terjadi kesalahan saat memproses rekomendasi.');
@@ -103,10 +104,10 @@ export const CandidateSearch: React.FC = () => {
       {/* Intro Header */}
       <div>
         <h1 className="text-2xl font-bold text-[#242424] tracking-tight">
-          Pencarian Kandidat &amp; Talent Pool Alumni
+          Pencarian Kandidat Alumni
         </h1>
         <p className="text-xs sm:text-sm text-[#595959] mt-0.5">
-          Filter data terstruktur profil alumni berdasarkan ketersediaan, domisili, dan preferensi role. Pengajuan
+          Filter data terstruktur profil alumni berdasarkan ketersediaan, domisili, dan preferensi role. Setiap
           rekomendasi ke partner company selalu memerlukan persetujuan alumni.
         </p>
       </div>
@@ -285,7 +286,7 @@ export const CandidateSearch: React.FC = () => {
                           }}
                           className="px-2.5 py-1 rounded bg-[#BD214C] hover:bg-[#a61b42] text-white text-xs font-bold transition-all shadow-xs"
                         >
-                          Ajukan Rekomendasi
+                          Rekomendasikan ke Lowongan
                         </button>
                       </td>
                     </tr>
@@ -333,22 +334,39 @@ export const CandidateSearch: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-[#595959] block">Kesiapan Mulai:</span>
-                  <span className="font-semibold text-[#242424] capitalize">
-                    {selectedCandidate.startReadiness.replace('_', ' ')}
-                  </span>
+                  <span className="font-semibold text-[#242424]">{describeReadiness(selectedCandidate)}</span>
                 </div>
                 <div>
                   <span className="text-[#595959] block">Pengalaman:</span>
-                  <span className="font-semibold text-[#242424]">{selectedCandidate.experienceBand}</span>
+                  <span className="font-semibold text-[#242424]">{EXPERIENCE_BAND_LABEL[selectedCandidate.experienceBand]}</span>
                 </div>
+                {selectedCandidate.targetLocations.length > 0 && (
+                  <div className="col-span-2">
+                    <span className="text-[#595959] block">Lokasi yang Dipertimbangkan:</span>
+                    <span className="font-semibold text-[#242424]">{selectedCandidate.targetLocations.join(', ')}</span>
+                  </div>
+                )}
+                {selectedCandidate.portfolioUrl && (
+                  <div className="col-span-2">
+                    <span className="text-[#595959] block">Portofolio:</span>
+                    <a
+                      href={selectedCandidate.portfolioUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-[#BD214C] underline break-all"
+                    >
+                      {selectedCandidate.portfolioUrl}
+                    </a>
+                  </div>
+                )}
                 <div>
-                  <span className="text-[#595959] block">Penawaran Proaktif:</span>
+                  <span className="text-[#595959] block">Rekomendasi Proaktif:</span>
                   <span
                     className={`font-semibold ${
                       selectedCandidate.allowProactiveContact ? 'text-emerald-700' : 'text-rose-600'
                     }`}
                   >
-                    {selectedCandidate.allowProactiveContact ? 'Diizinkan' : 'Ditolak (Apply Mandiri Saja)'}
+                    {selectedCandidate.allowProactiveContact ? 'Diizinkan' : 'Ditolak (Lamar Mandiri Saja)'}
                   </span>
                 </div>
               </div>
@@ -431,7 +449,7 @@ export const CandidateSearch: React.FC = () => {
 
             <div>
               <span className="text-xs font-bold text-[#BD214C] uppercase tracking-wider">
-                Pengajuan Peluang Proaktif
+                Rekomendasi Peluang Proaktif
               </span>
               <h3 className="text-lg font-bold text-[#242424] mt-0.5">
                 Rekomendasikan {proposingCandidate.fullName}
@@ -461,7 +479,7 @@ export const CandidateSearch: React.FC = () => {
               <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 space-y-1">
                 <strong className="block font-bold">Izin Kontak Tidak Aktif</strong>
                 <p>
-                  Alumni ini tidak mengaktifkan izin penawaran proaktif. Sistem memblokir pengajuan admin dan hanya
+                  Alumni ini tidak mengaktifkan izin rekomendasi proaktif. Sistem memblokir rekomendasi admin dan hanya
                   mengizinkan alumni untuk melamar mandiri melalui daftar lowongan.
                 </p>
               </div>
@@ -488,9 +506,9 @@ export const CandidateSearch: React.FC = () => {
                 </div>
 
                 <div className="p-3 rounded-lg bg-[#F9EDDE] border border-[#EADBCE] text-xs text-[#595959] space-y-1">
-                  <div className="font-bold text-[#242424]">Aturan Persetujuan (Consent)</div>
+                  <div className="font-bold text-[#242424]">Aturan Persetujuan</div>
                   <p>
-                    Pengajuan ini akan masuk ke tab &quot;Lamaran Saya&quot; alumni dengan status{' '}
+                    Rekomendasi ini akan masuk ke tab &quot;Lamaran Saya&quot; alumni dengan status{' '}
                     <strong className="text-[#242424]">&quot;Menunggu Persetujuan&quot;</strong>. Gifari belum boleh
                     meneruskan CV sampai alumni klik Setujui.
                   </p>
@@ -510,7 +528,7 @@ export const CandidateSearch: React.FC = () => {
                     disabled={proposalSubmitting || !selectedJobId}
                     className="px-5 py-2 rounded-lg bg-[#BD214C] hover:bg-[#a61b42] text-white text-xs font-bold disabled:bg-stone-300 transition-all shadow-xs"
                   >
-                    {proposalSubmitting ? 'Mengirimkan...' : 'Kirim Pengajuan ke Alumni'}
+                    {proposalSubmitting ? 'Mengirimkan...' : 'Kirim Rekomendasi ke Alumni'}
                   </button>
                 </div>
               </form>

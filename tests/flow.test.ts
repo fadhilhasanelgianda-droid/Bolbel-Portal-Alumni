@@ -85,6 +85,28 @@ after(async () => {
   await stopPg();
 });
 
+describe('profile fields', () => {
+  test('start date, notice period, portfolio and target locations round-trip', async () => {
+    const nia = await makeUser('alumni', 'Nia Profile');
+    await profiles.upsertProfile(nia.id, {
+      ...profileInput,
+      startReadiness: 'tanggal',
+      targetStartDate: '2027-03-01',
+      portfolioUrl: 'https://portfolio.example.com/nia',
+      targetLocations: ['Jakarta', 'Bandung'],
+    });
+    let saved = await profiles.getProfile(nia.id);
+    assert.equal(saved?.targetStartDate, '2027-03-01');
+    assert.equal(saved?.portfolioUrl, 'https://portfolio.example.com/nia');
+    assert.deepEqual(saved?.targetLocations, ['Jakarta', 'Bandung']);
+
+    await profiles.upsertProfile(nia.id, { ...profileInput, startReadiness: 'notice_period', noticePeriodDays: 30, targetStartDate: null });
+    saved = await profiles.getProfile(nia.id);
+    assert.equal(saved?.noticePeriodDays, 30);
+    assert.equal(saved?.targetStartDate ?? null, null);
+  });
+});
+
 describe('apply via BolBel', () => {
   test('requires consent, a profile and an active CV, then creates process + consent + event + task', async () => {
     const admin = await makeUser('admin', 'Admin A');
