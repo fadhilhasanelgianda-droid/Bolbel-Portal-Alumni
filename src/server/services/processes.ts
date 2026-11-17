@@ -22,6 +22,12 @@ import type { SessionUser } from '../auth.ts';
 import { query, tx } from '../db.ts';
 import { HttpError } from '../http.ts';
 import { rowTo, rowsTo } from '../mappers.ts';
+import {
+  notifyApplicationReceived,
+  notifyProposal,
+  notifyProposalApproved,
+  notifyStatusChange,
+} from './notifications.ts';
 import { getProfile } from './profiles.ts';
 import { POLICY_VERSION, addDays, insertEvent, insertTask } from './shared.ts';
 
@@ -173,7 +179,7 @@ export async function applyViaBolBel(user: SessionUser, jobId: string, consentAc
   if (!consentAccepted) {
     throw new HttpError(400, 'Persetujuan (consent) pembagian CV dan profil wajib dicentang secara aktif.');
   }
-  return tx(async (client) => {
+  const result = await tx(async (client) => {
     const job = await getJobTx(client, jobId);
     if (job.applyChannel !== 'bolbel') throw new HttpError(400, 'Lowongan ini dilamar melalui situs company, bukan BolBel.');
 
@@ -217,6 +223,8 @@ export async function applyViaBolBel(user: SessionUser, jobId: string, consentAc
     });
     return { processId };
   });
+  await notifyApplicationReceived(result.processId);
+  return result;
 }
 
 export const externalReportSchema = z.object({
@@ -314,6 +322,7 @@ export async function approveProposal(user: SessionUser, processId: string) {
       taskType: 'forward_cv', ownerName: job.processOwner, dueAt: addDays(1),
     });
   });
+  await notifyProposalApproved(processId);
 }
 
 export const reasonSchema = z.object({ reason: z.string().trim().min(1, 'Alasan wajib diisi.').max(1000) });
@@ -401,7 +410,7 @@ export const forwardSchema = z.object({
 
 /** Admin forwards the CV to the company (FR08). Requires active consent on the BolBel channel. */
 export async function forwardToCompany(user: SessionUser, processId: string, input: z.infer<typeof forwardSchema>) {
-  await tx(async (client) => {
+  const publicMessage = await tx(async (client) => {
     const proc = await lockProcess(client, processId);
     const job = await getJobTx(client, proc.jobId);
     const check = validateProcessUpdate(
@@ -414,6 +423,9 @@ export async function forwardToCompany(user: SessionUser, processId: string, inp
     if (proc.currentStage === 'diteruskan_ke_company') throw new HttpError(409, 'CV sudah diteruskan ke company.');
 
     await updateProcess(client, processId, { current_stage: 'diteruskan_ke_company', last_follow_up_date: new Date() });
+    const message =
+      input.publicMessage ||
+      `CV (${proc.documentName}) dan ringkasan profil telah resmi diteruskan oleh ${job.processOwner} kepada tim recruitment ${proc.companyName}.`;
     await insertEvent(client, {
       processId,
       eventType: 'forwarded_to_company',
@@ -421,9 +433,7 @@ export async function forwardToCompany(user: SessionUser, processId: string, inp
       newStage: 'diteruskan_ke_company',
       actor: actorOf(user),
       sourceType: 'admin_official',
-      publicMessage:
-        input.publicMessage ||
-        `CV (${proc.documentName}) dan ringkasan profil telah resmi diteruskan oleh ${job.processOwner} kepada tim recruitment ${proc.companyName}.`,
+      publicMessage: message,
       internalNotes: input.internalNotes,
     });
     await insertTask(client, {
@@ -432,7 +442,9 @@ export async function forwardToCompany(user: SessionUser, processId: string, inp
       description: `Tanyakan hasil review CV atau jadwal screening kepada PIC recruitment ${proc.companyName}.`,
       taskType: 'followup_company', ownerName: job.processOwner, dueAt: addDays(7),
     });
+    return message;
   });
+  await notifyStatusChange(processId, publicMessage);
 }
 
 const STAGES = Object.keys(STAGE_CONFIG) as [SelectionStage, ...SelectionStage[]];
@@ -453,7 +465,7 @@ export const stageUpdateSchema = z.object({
 
 export async function updateStage(user: SessionUser, processId: string, input: z.infer<typeof stageUpdateSchema>) {
   if (input.occurredAt > today()) throw new HttpError(400, 'Tanggal kejadian tidak boleh di masa depan.');
-  await tx(async (client) => {
+  const notice = await tx(async (client) => {
     const proc = await lockProcess(client, processId);
     if (input.expectedVersion !== undefined && input.expectedVersion !== proc.version) {
       throw new HttpError(409, 'Proses ini baru saja diperbarui oleh pihak lain. Muat ulang lalu coba lagi.');
@@ -476,6 +488,7 @@ export async function updateStage(user: SessionUser, processId: string, input: z
       interview_schedule: input.interviewSchedule || proc.interviewSchedule || null,
       actual_start_date: input.actualStartDate || proc.actualStartDate || null,
     });
+    const message = input.publicMessage || `Tahap seleksi diperbarui menjadi ${STAGE_CONFIG[input.stage].label}.`;
     await insertEvent(client, {
       processId,
       eventType: 'status_change',
@@ -486,17 +499,24 @@ export async function updateStage(user: SessionUser, processId: string, input: z
       actor: actorOf(user),
       sourceType: input.sourceType,
       occurredAt: input.occurredAt,
-      publicMessage: input.publicMessage || `Tahap seleksi diperbarui menjadi ${STAGE_CONFIG[input.stage].label}.`,
+      publicMessage: message,
       internalNotes: input.internalNotes,
     });
+    // Notes-only edits don't warrant an email; a new stage, outcome or interview time does
+    const changed =
+      input.stage !== proc.currentStage ||
+      input.outcome !== proc.outcome ||
+      Boolean(input.interviewSchedule && input.interviewSchedule !== proc.interviewSchedule);
+    return changed ? message : null;
   });
+  if (notice) await notifyStatusChange(processId, notice);
 }
 
 export const proposalSchema = z.object({ alumniId: z.string().uuid(), jobId: z.string().uuid() });
 
 /** Admin proposes a job to an alumnus who allows proactive contact (FR07). Waits for the alumnus's consent. */
 export async function createProposal(user: SessionUser, input: z.infer<typeof proposalSchema>) {
-  return tx(async (client) => {
+  const result = await tx(async (client) => {
     const profile = await getProfile(input.alumniId, client);
     if (!profile) throw new HttpError(404, 'Profil alumni tidak ditemukan.');
     if (!profile.allowProactiveContact) {
@@ -526,6 +546,8 @@ export async function createProposal(user: SessionUser, input: z.infer<typeof pr
     });
     return { processId: rows[0].id as string };
   });
+  await notifyProposal(result.processId);
+  return result;
 }
 
 export const reportReviewSchema = z.object({

@@ -3,6 +3,7 @@ import { after, before, describe, test } from 'node:test';
 import type { SessionUser } from '../src/server/auth.ts';
 import { getPool, query } from '../src/server/db.ts';
 import { HttpError } from '../src/server/http.ts';
+import { setMailTransport } from '../src/server/mailer.ts';
 import { runMigrations } from '../src/server/migrate.ts';
 import * as cvs from '../src/server/services/cvs.ts';
 import * as jobs from '../src/server/services/jobs.ts';
@@ -75,9 +76,11 @@ before(async () => {
   stopPg = pg.stop;
   process.env.DATABASE_URL = pg.url;
   await runMigrations();
+  setMailTransport(async () => undefined); // status emails are covered in notifications.test.ts
 });
 
 after(async () => {
+  setMailTransport(null);
   await getPool().end();
   await stopPg();
 });
