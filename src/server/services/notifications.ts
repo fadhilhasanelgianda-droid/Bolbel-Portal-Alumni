@@ -69,7 +69,8 @@ async function adminRecipients(): Promise<{ email: string; fullName: string }[]>
 }
 
 const signature = '\n\nSalam,\nTim Boleh Belajar';
-const portalLine = () => `Buka portal: ${appUrl()}/`;
+const alumniLink = (processId: string) => `${appUrl()}/lamaran/${processId}`;
+const adminLink = (processId: string) => `${appUrl()}/admin/pipeline/${processId}`;
 
 /** Alumnus applied through BolBel: confirm to them, and tell the admins there is something to review. */
 export function notifyApplicationReceived(processId: string): Promise<void> {
@@ -84,7 +85,7 @@ export function notifyApplicationReceived(processId: string): Promise<void> {
         text:
           `Halo ${ctx.alumniName},\n\nLamaranmu untuk posisi ${ctx.jobTitle} di ${ctx.companyName} sudah kami terima. ` +
           `Tim akan meninjau profil dan CV-mu sebelum meneruskannya ke company, dan kamu akan dapat email lagi ` +
-          `setiap ada perubahan status.\n\n${portalLine()}${signature}`,
+          `setiap ada perubahan status.\n\nLihat lamaranmu: ${alumniLink(processId)}${signature}`,
       });
     }
     for (const admin of await adminRecipients()) {
@@ -93,7 +94,7 @@ export function notifyApplicationReceived(processId: string): Promise<void> {
         subject: `Lamaran baru: ${ctx.alumniName} - ${ctx.jobTitle}`,
         text:
           `Halo ${admin.fullName},\n\n${ctx.alumniName} melamar ${ctx.jobTitle} di ${ctx.companyName} lewat BolBel ` +
-          `dan menunggu ditinjau.\n\n${portalLine()}`,
+          `dan menunggu ditinjau.\n\nBuka di pipeline: ${adminLink(processId)}`,
       });
     }
     return mails;
@@ -112,7 +113,7 @@ export function notifyProposal(processId: string): Promise<void> {
         text:
           `Halo ${ctx.alumniName},\n\nTim BolBel mengajukan posisi ${ctx.jobTitle} di ${ctx.companyName} untukmu. ` +
           `CV dan profilmu baru dibagikan ke company setelah kamu menyetujuinya. Kamu juga boleh menolak tanpa alasan khusus.\n\n` +
-          `Lihat dan tanggapi di menu "Lamaran Saya": ${appUrl()}/${signature}`,
+          `Lihat dan tanggapi di sini: ${alumniLink(processId)}${signature}`,
       },
     ];
   });
@@ -128,7 +129,7 @@ export function notifyProposalApproved(processId: string): Promise<void> {
       subject: `Disetujui: ${ctx.alumniName} - ${ctx.jobTitle}`,
       text:
         `Halo ${admin.fullName},\n\n${ctx.alumniName} menyetujui pengajuan ${ctx.jobTitle} di ${ctx.companyName}. ` +
-        `CV siap diteruskan ke company.\n\n${portalLine()}`,
+        `CV siap diteruskan ke company.\n\nBuka di pipeline: ${adminLink(processId)}`,
     }));
   });
 }
@@ -151,7 +152,7 @@ export function notifyStatusChange(processId: string, publicMessage: string): Pr
         text:
           `Halo ${ctx.alumniName},\n\nStatus lamaranmu untuk ${ctx.jobTitle} di ${ctx.companyName} sekarang: ${label}.\n\n` +
           `${publicMessage}\n${extra.length ? `\n${extra.join('\n')}\n` : ''}\n` +
-          `Lihat riwayat lengkapnya di menu "Lamaran Saya": ${appUrl()}/${signature}`,
+          `Lihat riwayat lengkapnya: ${alumniLink(processId)}${signature}`,
       },
     ];
   });

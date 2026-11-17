@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   GitPullRequest,
   Clock,
@@ -32,15 +33,25 @@ import {
   formatDateIndo,
 } from '../../domain/stateMachine.ts';
 import { Modal } from '../Modal.tsx';
+import { processPath } from '../routes.ts';
 
-export const ProcessPipeline: React.FC = () => {
+export const ProcessPipeline: React.FC<{ routeProcessId?: string }> = ({ routeProcessId }) => {
+  const router = useRouter();
   const {
     processes,
     updateCandidateStage,
     forwardCVToCompany,
   } = useDataStore();
 
-  const [selectedProcessId, setSelectedProcessId] = useState<string | null>(null);
+  const [selectedProcessId, setSelectedProcessId] = useState<string | null>(routeProcessId ?? null);
+  // Keep the selection in the URL (replace, so Back leaves the page instead of stepping through rows)
+  useEffect(() => {
+    if (routeProcessId) setSelectedProcessId(routeProcessId);
+  }, [routeProcessId]);
+  const selectProcess = (id: string) => {
+    setSelectedProcessId(id);
+    router.replace(processPath('admin-pipeline', id), { scroll: false });
+  };
   const [filterStage, setFilterStage] = useState<string>('all');
   const [filterOutcome, setFilterOutcome] = useState<string>('all');
 
@@ -210,7 +221,7 @@ export const ProcessPipeline: React.FC = () => {
               return (
                 <button
                   key={proc.id}
-                  onClick={() => setSelectedProcessId(proc.id)}
+                  onClick={() => selectProcess(proc.id)}
                   className={`w-full text-left p-4 rounded-xl border transition-all ${
                     isSelected
                       ? 'bg-white border-[#BD214C] shadow-md ring-1 ring-[#BD214C]'

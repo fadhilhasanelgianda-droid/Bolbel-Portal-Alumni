@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   FileText,
   Clock,
@@ -26,8 +27,10 @@ import {
   formatDateIndo,
 } from '../../domain/stateMachine.ts';
 import { Modal } from '../Modal.tsx';
+import { processPath } from '../routes.ts';
 
-export const MyApplications: React.FC = () => {
+export const MyApplications: React.FC<{ routeProcessId?: string }> = ({ routeProcessId }) => {
+  const router = useRouter();
   const {
     currentUser,
     processes,
@@ -36,7 +39,15 @@ export const MyApplications: React.FC = () => {
     withdrawApplication,
   } = useDataStore();
 
-  const [selectedProcessId, setSelectedProcessId] = useState<string | null>(null);
+  const [selectedProcessId, setSelectedProcessId] = useState<string | null>(routeProcessId ?? null);
+  // Keep the selection in the URL (replace, so Back leaves the page instead of stepping through rows)
+  useEffect(() => {
+    if (routeProcessId) setSelectedProcessId(routeProcessId);
+  }, [routeProcessId]);
+  const selectProcess = (id: string) => {
+    setSelectedProcessId(id);
+    router.replace(processPath('applications', id), { scroll: false });
+  };
 
   // Proposal modal & Withdraw modal
   const [withdrawTargetProcess, setWithdrawTargetProcess] = useState<CandidateProcess | null>(null);
@@ -204,7 +215,7 @@ export const MyApplications: React.FC = () => {
               return (
                 <button
                   key={proc.id}
-                  onClick={() => setSelectedProcessId(proc.id)}
+                  onClick={() => selectProcess(proc.id)}
                   className={`w-full text-left p-4 rounded-xl border transition-all ${
                     isSelected
                       ? 'bg-white border-[#BD214C] shadow-md ring-1 ring-[#BD214C]'

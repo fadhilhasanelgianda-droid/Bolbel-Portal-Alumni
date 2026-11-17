@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import {
   Briefcase,
   UserCheck,
@@ -19,13 +20,20 @@ import {
   LogOut,
 } from 'lucide-react';
 import { useDataStore } from '../domain/dataStore.tsx';
+import { TAB_PATH, type TabId, homePath } from './routes.ts';
 
 interface NavbarProps {
   currentTab: string;
-  setCurrentTab: (tab: string) => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => {
+interface NavTab {
+  id: TabId;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge?: number;
+}
+
+export const Navbar: React.FC<NavbarProps> = ({ currentTab }) => {
   const { currentUser, logout, processes, tasks } = useDataStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
@@ -57,7 +65,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
     (t) => t.status === 'pending' && new Date(t.dueAt).getTime() <= Date.now() + 24 * 60 * 60 * 1000
   ).length;
 
-  const alumniTabs = [
+  const alumniTabs: NavTab[] = [
     { id: 'jobs', label: 'Lowongan Terkurasi', icon: Briefcase },
     {
       id: 'applications',
@@ -68,7 +76,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
     { id: 'profile', label: 'Profil & CV Saya', icon: UserCheck },
   ];
 
-  const adminTabs = [
+  const adminTabs: NavTab[] = [
     { id: 'admin-dashboard', label: 'Ringkasan', icon: LayoutDashboard },
     { id: 'admin-candidates', label: 'Kandidat', icon: Users },
     { id: 'admin-jobs', label: 'Lowongan & Company', icon: Building2 },
@@ -90,10 +98,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
         <div className="flex items-center justify-between h-16">
           {/* Brand Logo */}
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => setCurrentTab(currentUser.role === 'admin' ? 'admin-dashboard' : 'jobs')}
-              className="flex items-center gap-2.5 text-left focus:outline-hidden"
-            >
+            <Link href={homePath(currentUser.role)} className="flex items-center gap-2.5 text-left focus:outline-hidden">
               <Image
                 src="/brand/boleh-belajar-logo.png"
                 alt="Boleh Belajar"
@@ -107,7 +112,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
                   Portal Karier Alumni
                 </span>
               </div>
-            </button>
+            </Link>
           </div>
 
           {/* Desktop Navigation */}
@@ -116,9 +121,9 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
               const Icon = tab.icon;
               const isActive = currentTab === tab.id;
               return (
-                <button
+                <Link
                   key={tab.id}
-                  onClick={() => setCurrentTab(tab.id)}
+                  href={TAB_PATH[tab.id]}
                   aria-current={isActive ? 'page' : undefined}
                   className={`relative flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
                     isActive
@@ -137,7 +142,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
                       {tab.badge}
                     </span>
                   )}
-                </button>
+                </Link>
               );
             })}
           </nav>
@@ -221,12 +226,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
             const Icon = tab.icon;
             const isActive = currentTab === tab.id;
             return (
-              <button
+              <Link
                 key={tab.id}
-                onClick={() => {
-                  setCurrentTab(tab.id);
-                  setMobileMenuOpen(false);
-                }}
+                href={TAB_PATH[tab.id]}
+                onClick={() => setMobileMenuOpen(false)}
                 aria-current={isActive ? 'page' : undefined}
                 className={`w-full min-h-11 flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium ${
                   isActive ? 'bg-[#BD214C] text-white' : 'text-[#595959] hover:bg-[#F7F7F7]'
@@ -241,7 +244,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
                     {tab.badge}
                   </span>
                 )}
-              </button>
+              </Link>
             );
           })}
         </div>

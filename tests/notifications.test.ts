@@ -85,14 +85,15 @@ describe('status emails', () => {
     const admin = await makeUser('admin', 'Admin Notif');
     const gone = await makeUser('admin', 'Admin Gone', false);
     const sari = await makeAlumnusWithCv('Sari Notif');
-    await processes.applyViaBolBel(sari, await makeJob(), true);
+    const { processId } = await processes.applyViaBolBel(sari, await makeJob(), true);
 
     const mine = to(sari.email);
     assert.equal(mine.length, 1);
     assert.match(mine[0].subject, /Lamaranmu diterima: Ads Specialist di Acme/);
-    assert.match(mine[0].text, /https:\/\/portal\.test\//);
+    assert.match(mine[0].text, new RegExp(`https://portal\\.test/lamaran/${processId}`));
     assert.equal(to(admin.email).length, 1);
     assert.match(to(admin.email)[0].subject, /Lamaran baru: Sari Notif/);
+    assert.match(to(admin.email)[0].text, new RegExp(`https://portal\\.test/admin/pipeline/${processId}`));
     assert.equal(to(gone.email).length, 0);
   });
 
