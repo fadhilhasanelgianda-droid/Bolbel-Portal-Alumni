@@ -114,7 +114,7 @@ export function isMinimumProfileComplete(
   if (!profile.targetWorkTypes || profile.targetWorkTypes.length === 0) missing.push('Jenis Pekerjaan');
   if (!profile.targetWorkModels || profile.targetWorkModels.length === 0) missing.push('Cara Kerja (WFO/Hybrid/Remote)');
   if (!profile.domicile || profile.domicile.trim() === '') missing.push('Domisili');
-  if (activeCvCount <= 0) missing.push('CV Aktif (PDF <= 5MB)');
+  if (activeCvCount <= 0) missing.push('CV Aktif (PDF <= 4MB)');
 
   return {
     isComplete: missing.length === 0,
@@ -163,7 +163,7 @@ export function checkCanApply(
     if (!activeCv) {
       return {
         canApply: false,
-        reason: 'Harap unggah CV aktif dalam format PDF (maksimal 5 MB) sebelum melamar via BolBel.',
+        reason: 'Harap unggah CV aktif dalam format PDF (maksimal 4 MB) sebelum melamar via BolBel.',
       };
     }
   }

@@ -28,6 +28,7 @@ import type {
   AlumniProfile,
 } from '../../domain/types.ts';
 import { isProfileFresh, formatDateIndo } from '../../domain/stateMachine.ts';
+import { cvDownloadUrl } from '../../client/api.ts';
 
 export const ProfileAndCV: React.FC = () => {
   const {
@@ -260,7 +261,7 @@ export const ProfileAndCV: React.FC = () => {
               <div>
                 <h3 className="text-base font-bold text-[#242424]">Pengelolaan CV Berversi</h3>
                 <p className="text-xs text-[#595959]">
-                  Dokumen privat (PDF maks 5 MB). Penggantian CV tidak mengubah versi pada lamaran yang sudah dikirim.
+                  Dokumen privat (PDF maks 4 MB). Penggantian CV tidak mengubah versi pada lamaran yang sudah dikirim.
                 </p>
               </div>
             </div>
@@ -283,7 +284,7 @@ export const ProfileAndCV: React.FC = () => {
               <div className="text-xs font-bold text-[#242424]">
                 {isUploading ? 'Sedang Memeriksa File...' : 'Klik untuk Unggah CV Baru'}
               </div>
-              <p className="text-xs text-[#595959] mt-0.5">Format PDF saja, maksimal 5 MB</p>
+              <p className="text-xs text-[#595959] mt-0.5">Format PDF saja, maksimal 4 MB</p>
             </label>
 
             {uploadError && (
@@ -344,13 +345,15 @@ export const ProfileAndCV: React.FC = () => {
                         </button>
                       )}
 
-                      <button
-                        onClick={() => alert(`Simulasi unduh privat untuk ${cv.fileName} (Link berlaku 5 menit)`)}
-                        title="Unduh CV (URL Privat berlaku 5 menit)"
+                      <a
+                        href={cvDownloadUrl(cv.id)}
+                        download
+                        title="Unduh CV"
+                        aria-label={`Unduh ${cv.fileName}`}
                         className="p-1 text-[#595959] hover:text-[#BD214C]"
                       >
                         <Download className="w-3.5 h-3.5" />
-                      </button>
+                      </a>
 
                       {!cv.isCurrentActive && (
                         <button

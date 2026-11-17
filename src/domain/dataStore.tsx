@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { ApiError, api } from '../client/api.ts';
+import { ApiError, api, apiUpload } from '../client/api.ts';
 import type {
   AlumniProfile,
   AlumniReport,
@@ -226,7 +226,11 @@ export const DataStoreProvider: React.FC<ProviderProps> = ({ user, onLogout, onU
 
       updateProfile: async (profile) => strip(await run(() => api('PUT', '/api/me/profile', toProfileInput(profile)))),
       confirmAvailability: async () => strip(await run(() => api('POST', '/api/me/profile/confirm'))),
-      uploadCV: async () => ({ success: false, error: 'Fitur unggah CV sedang disiapkan.' }),
+      uploadCV: async (file) => {
+        const form = new FormData();
+        form.append('file', file);
+        return strip(await run(() => apiUpload('/api/me/cvs', form)));
+      },
       setActiveCV: async (cvId) => strip(await run(() => api('PATCH', `/api/me/cvs/${cvId}`))),
       deleteCV: async (cvId) => strip(await run(() => api('DELETE', `/api/me/cvs/${cvId}`))),
 

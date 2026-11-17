@@ -21,6 +21,7 @@ import { useDataStore } from '../../domain/dataStore.tsx';
 import type { AlumniProfile, OpennessStatus, ExperienceBand, WorkModel } from '../../domain/types.ts';
 import { isProfileFresh, formatDateIndo, STAGE_CONFIG } from '../../domain/stateMachine.ts';
 import { Modal } from '../Modal.tsx';
+import { cvDownloadUrl } from '../../client/api.ts';
 import { EXPERIENCE_BAND_LABEL, describeReadiness } from '../../domain/labels.ts';
 
 export const CandidateSearch: React.FC = () => {
@@ -391,16 +392,13 @@ export const CandidateSearch: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    <button
-                      onClick={() =>
-                        alert(
-                          `Akses URL privat untuk ${activeCv.fileName} (Dihasilkan oleh API, kedaluwarsa setelah 5 menit)`
-                        )
-                      }
+                    <a
+                      href={cvDownloadUrl(activeCv.id)}
+                      download
                       className="px-3 py-1.5 rounded bg-white border border-[#D9D9D9] hover:border-[#BD214C] text-xs font-bold text-[#BD214C] flex items-center gap-1"
                     >
-                      <Download className="w-3.5 h-3.5" /> Unduh (5 min TTL)
-                    </button>
+                      <Download className="w-3.5 h-3.5" /> Unduh CV
+                    </a>
                   </div>
                 );
               })()}

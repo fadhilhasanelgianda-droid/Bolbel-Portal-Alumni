@@ -49,7 +49,7 @@ test('isMinimumProfileComplete verifies required application fields', () => {
 
   const missingCvCheck = isMinimumProfileComplete(dummyProfile, 0);
   assert.equal(missingCvCheck.isComplete, false);
-  assert.ok(missingCvCheck.missingFields.includes('CV Aktif (PDF <= 5MB)'));
+  assert.ok(missingCvCheck.missingFields.includes('CV Aktif (PDF <= 4MB)'));
 
   const emptyProfileCheck = isMinimumProfileComplete(null, 1);
   assert.equal(emptyProfileCheck.isComplete, false);
