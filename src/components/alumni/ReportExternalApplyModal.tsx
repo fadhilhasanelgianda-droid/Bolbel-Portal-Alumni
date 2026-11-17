@@ -8,9 +8,10 @@ import { useDataStore } from '../../domain/dataStore.tsx';
 interface ReportExternalApplyModalProps {
   job: Job;
   onClose: () => void;
+  onGoToApplications?: () => void;
 }
 
-export const ReportExternalApplyModal: React.FC<ReportExternalApplyModalProps> = ({ job, onClose }) => {
+export const ReportExternalApplyModal: React.FC<ReportExternalApplyModalProps> = ({ job, onClose, onGoToApplications }) => {
   const { reportExternalApply } = useDataStore();
   const [applyDate, setApplyDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
@@ -66,11 +67,16 @@ export const ReportExternalApplyModal: React.FC<ReportExternalApplyModalProps> =
               memantau dan membantu koordinasi tindak lanjut dengan company.
             </p>
             <button
-              onClick={onClose}
+              onClick={onGoToApplications ?? onClose}
               className="w-full py-2.5 bg-[#BD214C] text-white rounded-lg text-sm font-bold hover:bg-[#a61b42] transition-colors"
             >
-              Kembali ke Daftar Lowongan
+              {onGoToApplications ? 'Lihat Lamaran Saya' : 'Kembali ke Daftar Lowongan'}
             </button>
+            {onGoToApplications && (
+              <button onClick={onClose} className="w-full text-xs font-semibold text-[#595959] hover:text-[#BD214C]">
+                Kembali ke Daftar Lowongan
+              </button>
+            )}
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">

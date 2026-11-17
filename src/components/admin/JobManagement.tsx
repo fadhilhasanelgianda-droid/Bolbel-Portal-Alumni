@@ -19,6 +19,7 @@ import {
 import { useDataStore } from '../../domain/dataStore.tsx';
 import type { Job, JobStatus, ApplyChannel, SalaryType, WorkType, WorkModel, ExperienceLevel } from '../../domain/types.ts';
 import { formatCurrencyIDR, formatDateIndo } from '../../domain/stateMachine.ts';
+import { WORK_MODEL_LABEL } from '../../domain/labels.ts';
 
 export const JobManagement: React.FC = () => {
   const { jobs, companies, addJob, updateJobStatus, addCompany } = useDataStore();
@@ -251,7 +252,7 @@ export const JobManagement: React.FC = () => {
                       <div className="font-bold text-[#242424] text-sm">{job.title}</div>
                       <div className="text-[11px] text-[#595959] flex items-center gap-1 mt-0.5">
                         <Building className="w-3.5 h-3.5" />
-                        {job.companyName} • {job.location} ({job.workModel.toUpperCase()})
+                        {job.companyName} • {job.location} ({WORK_MODEL_LABEL[job.workModel]})
                       </div>
                     </td>
 

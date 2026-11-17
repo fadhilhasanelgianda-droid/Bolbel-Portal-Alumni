@@ -29,7 +29,7 @@ const AppContent: React.FC = () => {
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Alumni Views */}
-        {currentTab === 'jobs' && <JobList onGoToProfile={() => setCurrentTab('profile')} />}
+        {currentTab === 'jobs' && <JobList onGoToProfile={() => setCurrentTab('profile')} onGoToApplications={() => setCurrentTab('applications')} />}
         {currentTab === 'applications' && <MyApplications />}
         {currentTab === 'profile' && <ProfileAndCV />}
 

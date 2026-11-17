@@ -68,6 +68,7 @@ export const MyApplications: React.FC = () => {
   };
 
   const handleRejectProposal = async (procId: string) => {
+    if (!window.confirm('Tolak peluang ini? CV kamu tidak akan diteruskan ke company, dan keputusan ini tidak bisa diubah.')) return;
     setIsProcessing(true);
     const res = await rejectAdminProposal(procId);
     setActionError(res.success ? null : (res.error ?? 'Gagal menolak pengajuan.'));

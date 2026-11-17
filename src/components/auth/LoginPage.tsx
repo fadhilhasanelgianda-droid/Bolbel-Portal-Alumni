@@ -28,6 +28,15 @@ export const LoginPage: React.FC<{ onAuthenticated: () => void }> = ({ onAuthent
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Seconds before the same link can be requested again; also tells the user the first request went through
+  const [cooldown, setCooldown] = useState(0);
+  const [linkSent, setLinkSent] = useState(false);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
 
   useEffect(() => {
     if (link) window.history.replaceState(null, '', window.location.pathname);
@@ -39,6 +48,8 @@ export const LoginPage: React.FC<{ onAuthenticated: () => void }> = ({ onAuthent
     setNotice(null);
     setPassword('');
     setConfirm('');
+    setLinkSent(false);
+    setCooldown(0);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,7 +80,13 @@ export const LoginPage: React.FC<{ onAuthenticated: () => void }> = ({ onAuthent
         setNotice('Password berhasil diganti. Silakan masuk dengan password baru.');
       } else {
         await api('POST', mode === 'activate' ? '/api/auth/request-activation' : '/api/auth/request-reset', { email });
-        setNotice('Jika emailmu terdaftar, tautan sudah kami kirim. Cek inbox (dan folder spam).');
+        setNotice(
+          `Jika emailmu terdaftar, tautan sudah kami kirim dan berlaku ${
+            mode === 'activate' ? '72 jam' : '1 jam'
+          }. Cek inbox (dan folder spam). Belum masuk? Kamu bisa minta kirim ulang setelah 60 detik; hanya tautan terbaru yang berlaku.`
+        );
+        setLinkSent(true);
+        setCooldown(60);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Terjadi kesalahan. Coba lagi.');
@@ -202,13 +219,14 @@ export const LoginPage: React.FC<{ onAuthenticated: () => void }> = ({ onAuthent
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || cooldown > 0}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#BD214C] text-white text-sm font-semibold hover:bg-[#a51d43] disabled:opacity-60 transition-colors"
             >
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
               {mode === 'login' && 'Masuk'}
-              {mode === 'activate' && 'Kirim Tautan Aktivasi'}
-              {mode === 'forgot' && 'Kirim Tautan Reset'}
+              {mode === 'activate' && (linkSent ? 'Kirim Ulang Tautan Aktivasi' : 'Kirim Tautan Aktivasi')}
+              {mode === 'forgot' && (linkSent ? 'Kirim Ulang Tautan Reset' : 'Kirim Tautan Reset')}
+              {cooldown > 0 && (mode === 'activate' || mode === 'forgot') && ` (${cooldown} dtk)`}
               {mode === 'set-password' && (link?.purpose === 'activate' ? 'Aktifkan Akun' : 'Simpan Password')}
             </button>
 

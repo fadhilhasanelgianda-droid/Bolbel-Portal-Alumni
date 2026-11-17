@@ -21,9 +21,11 @@ interface ApplyBolBelModalProps {
   onClose: () => void;
   /** Closes the modal and opens the Profil & CV tab. */
   onGoToProfile?: () => void;
+  /** Closes the modal and opens the Lamaran Saya tab (shown on the success screen). */
+  onGoToApplications?: () => void;
 }
 
-export const ApplyBolBelModal: React.FC<ApplyBolBelModalProps> = ({ job, onClose, onGoToProfile }) => {
+export const ApplyBolBelModal: React.FC<ApplyBolBelModalProps> = ({ job, onClose, onGoToProfile, onGoToApplications }) => {
   const { currentProfile, activeCv, applyViaBolBel } = useDataStore();
 
   const [consentChecked, setConsentChecked] = useState(false);
@@ -96,11 +98,16 @@ export const ApplyBolBelModal: React.FC<ApplyBolBelModalProps> = ({ job, onClose
               </div>
             </div>
             <button
-              onClick={onClose}
+              onClick={onGoToApplications ?? onClose}
               className="w-full py-2.5 bg-[#BD214C] text-white rounded-lg text-sm font-bold hover:bg-[#a61b42] transition-colors"
             >
-              Kembali ke Daftar Lowongan
+              {onGoToApplications ? 'Lihat Lamaran Saya' : 'Kembali ke Daftar Lowongan'}
             </button>
+            {onGoToApplications && (
+              <button onClick={onClose} className="w-full text-xs font-semibold text-[#595959] hover:text-[#BD214C]">
+                Kembali ke Daftar Lowongan
+              </button>
+            )}
           </div>
         ) : (
           /* Application Form */

@@ -10,6 +10,7 @@ const description =
 export const metadata: Metadata = {
   title: 'Portal Karier Alumni Boleh Belajar',
   description,
+  robots: { index: false, follow: false },
   openGraph: { title: 'Portal Karier Alumni Boleh Belajar', description, type: 'website' },
   twitter: { card: 'summary_large_image' },
 };

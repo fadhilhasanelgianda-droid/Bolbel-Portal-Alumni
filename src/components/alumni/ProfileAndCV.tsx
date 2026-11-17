@@ -350,7 +350,11 @@ export const ProfileAndCV: React.FC = () => {
 
                       {!cv.isCurrentActive && (
                         <button
-                          onClick={() => deleteCV(cv.id)}
+                          onClick={async () => {
+                            if (!window.confirm(`Hapus "${cv.fileName}"? Tindakan ini tidak bisa dibatalkan.`)) return;
+                            const res = await deleteCV(cv.id);
+                            if (!res.success) setUploadError(res.error ?? 'Gagal menghapus CV.');
+                          }}
                           title="Hapus versi lama"
                           className="p-1 text-[#595959] hover:text-rose-600"
                         >

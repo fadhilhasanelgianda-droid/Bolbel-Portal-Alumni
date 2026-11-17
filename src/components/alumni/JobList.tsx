@@ -18,11 +18,15 @@ import {
 import { useDataStore } from '../../domain/dataStore.tsx';
 import type { Job, WorkModel, WorkType, ApplyChannel } from '../../domain/types.ts';
 import { formatCurrencyIDR, formatDateIndo, STAGE_CONFIG } from '../../domain/stateMachine.ts';
+import { WORK_MODEL_LABEL, WORK_TYPE_LABEL, EXPERIENCE_LEVEL_LABEL } from '../../domain/labels.ts';
 import { JobDetailModal } from './JobDetailModal.tsx';
 import { ApplyBolBelModal } from './ApplyBolBelModal.tsx';
 import { ReportExternalApplyModal } from './ReportExternalApplyModal.tsx';
 
-export const JobList: React.FC<{ onGoToProfile?: () => void }> = ({ onGoToProfile }) => {
+export const JobList: React.FC<{ onGoToProfile?: () => void; onGoToApplications?: () => void }> = ({
+  onGoToProfile,
+  onGoToApplications,
+}) => {
   const { jobs, processes, currentUser } = useDataStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedModel, setSelectedModel] = useState<string>('all');
@@ -124,6 +128,8 @@ export const JobList: React.FC<{ onGoToProfile?: () => void }> = ({ onGoToProfil
               <option value="full_time">Full-time</option>
               <option value="contract">Kontrak</option>
               <option value="internship">Magang</option>
+              <option value="freelance">Freelance</option>
+              <option value="part_time">Part-time</option>
             </select>
 
             {/* Jalur Apply Filter */}
@@ -233,13 +239,13 @@ export const JobList: React.FC<{ onGoToProfile?: () => void }> = ({ onGoToProfil
                   {/* Job Tags */}
                   <div className="flex flex-wrap gap-2 mt-3 text-xs text-[#595959]">
                     <span className="px-2 py-1 rounded-md bg-[#F7F7F7] border border-[#D9D9D9] flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-[#595959]" /> {job.location} ({job.workModel.toUpperCase()})
+                      <MapPin className="w-3 h-3 text-[#595959]" /> {job.location} ({WORK_MODEL_LABEL[job.workModel]})
                     </span>
                     <span className="px-2 py-1 rounded-md bg-[#F7F7F7] border border-[#D9D9D9] flex items-center gap-1">
-                      <Briefcase className="w-3 h-3 text-[#595959]" /> {job.workType.replace('_', ' ')}
+                      <Briefcase className="w-3 h-3 text-[#595959]" /> {WORK_TYPE_LABEL[job.workType]}
                     </span>
                     <span className="px-2 py-1 rounded-md bg-[#F7F7F7] border border-[#D9D9D9]">
-                      Level: {job.experienceLevel}
+                      Level: {EXPERIENCE_LEVEL_LABEL[job.experienceLevel]}
                     </span>
                   </div>
 
@@ -286,7 +292,7 @@ export const JobList: React.FC<{ onGoToProfile?: () => void }> = ({ onGoToProfil
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setActiveJobForReportExternal(job)}
-                        className="px-3 py-1.5 rounded-lg border border-[#D9D9D9] hover:border-[#BD214C] text-[#242424] text-xs font-semibold transition-colors"
+                        className="px-1 py-1.5 text-[#595959] hover:text-[#BD214C] hover:underline text-xs font-semibold transition-colors"
                         title="Catat jika sudah melamar di website company"
                       >
                         Sudah Melamar?
@@ -330,6 +336,7 @@ export const JobList: React.FC<{ onGoToProfile?: () => void }> = ({ onGoToProfil
         <ApplyBolBelModal
           job={activeJobForApplyBolBel}
           onClose={() => setActiveJobForApplyBolBel(null)}
+          onGoToApplications={onGoToApplications}
           onGoToProfile={
             onGoToProfile
               ? () => {
@@ -345,6 +352,7 @@ export const JobList: React.FC<{ onGoToProfile?: () => void }> = ({ onGoToProfil
         <ReportExternalApplyModal
           job={activeJobForReportExternal}
           onClose={() => setActiveJobForReportExternal(null)}
+          onGoToApplications={onGoToApplications}
         />
       )}
     </div>
