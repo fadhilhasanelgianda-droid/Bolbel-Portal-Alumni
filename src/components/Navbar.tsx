@@ -79,7 +79,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
       icon: CheckSquare,
       badge: urgentAdminTasksCount > 0 ? urgentAdminTasksCount : undefined,
     },
-    { id: 'admin-import', label: 'Impor & Privasi', icon: UploadCloud },
+    { id: 'admin-import', label: 'Roster & Privasi', icon: UploadCloud },
   ];
 
   const currentTabs = currentUser.role === 'admin' ? adminTabs : alumniTabs;

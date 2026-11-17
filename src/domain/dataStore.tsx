@@ -10,6 +10,7 @@ import type {
   Company,
   ConsentRecord,
   CVDocument,
+  EligibilityStatus,
   FollowUpTask,
   Job,
   ProcessEvent,
@@ -84,6 +85,8 @@ interface DataStoreContextType extends Data {
   toggleTaskStatus: (taskId: string) => Promise<Result>;
   createFollowUpTask: (task: Omit<FollowUpTask, 'id' | 'createdAt' | 'status'>) => Promise<Result>;
   importRosterBatch: (newEntries: Omit<AlumniRosterEntry, 'id' | 'invitedAt'>[]) => Promise<number>;
+  /** Anything but 'eligible' deactivates the linked account and ends its sessions (enforced on the server). */
+  setRosterEligibility: (rosterId: string, eligibility: EligibilityStatus) => Promise<Result>;
 }
 
 const DataStoreContext = createContext<DataStoreContextType | null>(null);
@@ -311,6 +314,8 @@ export const DataStoreProvider: React.FC<ProviderProps> = ({ user, onLogout, onU
         const res = await run(() => api<{ added: number }>('POST', '/api/roster/import', { entries }));
         return res.value?.added ?? 0;
       },
+      setRosterEligibility: async (rosterId, eligibility) =>
+        strip(await run(() => api('PATCH', `/api/roster/${rosterId}`, { eligibility }))),
     };
   }, [data, user, onLogout, refresh, run]);
 

@@ -15,6 +15,7 @@ import {
 import { useDataStore } from '../../domain/dataStore.tsx';
 import { parseAndValidateRosterCsv, formatDateIndo } from '../../domain/stateMachine.ts';
 import type { CsvRosterImportRow, EligibilityStatus } from '../../domain/types.ts';
+import { RosterManager } from './RosterManager.tsx';
 
 const SAMPLE_CSV = `Email,Nama Lengkap,Program,Batch,Eligibility
 hendra.wijaya@alumni.com,Hendra Wijaya,Full Course,Batch 12,eligible
@@ -25,7 +26,7 @@ invalid-email-address,Kurnia Pratama,Career Prep,Batch 10,pending`;
 export const DataImportAndAudit: React.FC = () => {
   const { roster, consents, importRosterBatch } = useDataStore();
 
-  const [activeTab, setActiveTab] = useState<'import' | 'audit'>('import');
+  const [activeTab, setActiveTab] = useState<'roster' | 'import' | 'audit'>('roster');
   // Starts empty on purpose: the sample rows are fake and must never be committable by accident
   const [csvText, setCsvText] = useState('');
   const [parsedRows, setParsedRows] = useState<CsvRosterImportRow[]>([]);
@@ -80,7 +81,7 @@ export const DataImportAndAudit: React.FC = () => {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-[#242424] tracking-tight">
-          Impor Roster Awal &amp; Audit Privasi Data
+          Roster Alumni &amp; Audit Privasi Data
         </h1>
         <p className="text-xs sm:text-sm text-[#595959] mt-0.5">
           Kelola daftar alumni yang berhak memakai portal, dan pantau persetujuan pembagian data.
@@ -88,9 +89,21 @@ export const DataImportAndAudit: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-[#D9D9D9] pb-2 text-xs">
+      <div className="flex flex-wrap gap-2 border-b border-[#D9D9D9] pb-2 text-xs">
+        <button
+          onClick={() => setActiveTab('roster')}
+          aria-pressed={activeTab === 'roster'}
+          className={`px-4 py-2 rounded-lg font-bold transition-all ${
+            activeTab === 'roster'
+              ? 'bg-[#BD214C] text-white'
+              : 'text-[#595959] hover:bg-[#F7F7F7]'
+          }`}
+        >
+          Daftar Roster ({roster.length})
+        </button>
         <button
           onClick={() => setActiveTab('import')}
+          aria-pressed={activeTab === 'import'}
           className={`px-4 py-2 rounded-lg font-bold transition-all ${
             activeTab === 'import'
               ? 'bg-[#BD214C] text-white'
@@ -111,7 +124,9 @@ export const DataImportAndAudit: React.FC = () => {
         </button>
       </div>
 
-      {activeTab === 'import' ? (
+      {activeTab === 'roster' ? (
+        <RosterManager />
+      ) : activeTab === 'import' ? (
         /* Impor CSV Tab */
         <div className="space-y-6">
           <div className="bg-white rounded-xl border border-[#D9D9D9] p-5 shadow-xs space-y-4">
