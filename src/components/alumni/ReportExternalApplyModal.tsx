@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { X, ExternalLink, Calendar, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { Job } from '../../domain/types.ts';
 import { useDataStore } from '../../domain/dataStore.tsx';
+import { Modal } from '../Modal.tsx';
 
 interface ReportExternalApplyModalProps {
   job: Job;
@@ -43,7 +44,7 @@ export const ReportExternalApplyModal: React.FC<ReportExternalApplyModalProps> =
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+    <Modal onClose={isSubmitting ? () => undefined : onClose} label="Laporan apply eksternal">
       <div className="relative bg-white rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-xl">
         {!success && (
           <button
@@ -81,7 +82,7 @@ export const ReportExternalApplyModal: React.FC<ReportExternalApplyModalProps> =
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <span className="inline-block px-2 py-0.5 rounded text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+              <span className="inline-block px-2 py-0.5 rounded text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
                 Pencatatan Apply Eksternal
               </span>
               <h2 className="text-xl font-bold text-[#242424] mt-1">{job.title}</h2>
@@ -117,7 +118,7 @@ export const ReportExternalApplyModal: React.FC<ReportExternalApplyModalProps> =
                   required
                 />
               </div>
-              <span className="text-[11px] text-[#595959] mt-1 block">
+              <span className="text-xs text-[#595959] mt-1 block">
                 Tanggal tidak boleh di masa mendatang.
               </span>
             </div>
@@ -156,6 +157,6 @@ export const ReportExternalApplyModal: React.FC<ReportExternalApplyModalProps> =
           </form>
         )}
       </div>
-    </div>
+    </Modal>
   );
 };

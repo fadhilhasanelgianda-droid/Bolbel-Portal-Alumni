@@ -15,6 +15,7 @@ import {
 import type { Job } from '../../domain/types.ts';
 import { useDataStore } from '../../domain/dataStore.tsx';
 import { isMinimumProfileComplete } from '../../domain/stateMachine.ts';
+import { Modal } from '../Modal.tsx';
 
 interface ApplyBolBelModalProps {
   job: Job;
@@ -65,7 +66,7 @@ export const ApplyBolBelModal: React.FC<ApplyBolBelModalProps> = ({ job, onClose
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+    <Modal onClose={submitting ? () => undefined : onClose} label="Formulir lamaran">
       <div className="relative bg-white rounded-2xl max-w-xl w-full p-6 sm:p-8 shadow-xl">
         {/* Close Button */}
         {!successResult && (
@@ -93,7 +94,7 @@ export const ApplyBolBelModal: React.FC<ApplyBolBelModalProps> = ({ job, onClose
                 Penyimpanan lamaran ini tidak berarti CV kamu sudah otomatis terkirim ke HR {job.companyName}.
                 Gifari akan memverifikasi kesesuaian berkas dan menghubungimu jika terdapat jadwal wawancara.
               </p>
-              <div className="pt-2 border-t border-[#D9D9D9] text-[11px] text-[#595959]">
+              <div className="pt-2 border-t border-[#D9D9D9] text-xs text-[#595959]">
                 <span className="font-medium">ID Referensi Lamaran:</span> {successResult.processId}
               </div>
             </div>
@@ -138,7 +139,7 @@ export const ApplyBolBelModal: React.FC<ApplyBolBelModalProps> = ({ job, onClose
                   <ShieldAlert className="w-4 h-4 text-amber-600" />
                   Profilmu belum memenuhi syarat minimum:
                 </div>
-                <ul className="list-disc pl-5 text-[11px]">
+                <ul className="list-disc pl-5 text-xs">
                   {profileValidation.missingFields.map((field, i) => (
                     <li key={i}>{field}</li>
                   ))}
@@ -159,7 +160,7 @@ export const ApplyBolBelModal: React.FC<ApplyBolBelModalProps> = ({ job, onClose
             <div className="p-3.5 rounded-xl border border-[#D9D9D9] bg-[#F7F7F7]">
               <div className="text-xs font-bold text-[#595959] uppercase tracking-wider mb-2 flex items-center justify-between">
                 <span>Dokumen CV yang Akan Digunakan</span>
-                <span className="text-[11px] text-[#BD214C] font-semibold">Terkunci ke Lamaran Ini</span>
+                <span className="text-xs text-[#BD214C] font-semibold">Terkunci ke Lamaran Ini</span>
               </div>
               {activeCv ? (
                 <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-[#D9D9D9]">
@@ -167,12 +168,12 @@ export const ApplyBolBelModal: React.FC<ApplyBolBelModalProps> = ({ job, onClose
                     <FileText className="w-5 h-5 text-[#BD214C]" />
                     <div>
                       <div className="text-xs font-bold text-[#242424]">{activeCv.fileName}</div>
-                      <div className="text-[11px] text-[#595959]">
+                      <div className="text-xs text-[#595959]">
                         {(activeCv.fileSizeBytes / 1024 / 1024).toFixed(2)} MB • PDF
                       </div>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                  <span className="text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
                     CV Aktif
                   </span>
                 </div>
@@ -185,7 +186,7 @@ export const ApplyBolBelModal: React.FC<ApplyBolBelModalProps> = ({ job, onClose
 
             {/* Profile Snapshot Preview */}
             <div className="p-3.5 rounded-xl border border-[#D9D9D9] bg-[#F7F7F7] space-y-2 text-xs">
-              <div className="font-bold text-[#595959] uppercase tracking-wider text-[11px]">
+              <div className="font-bold text-[#595959] uppercase tracking-wider text-xs">
                 Snapshot Profil yang Akan Diteruskan
               </div>
               <div className="grid grid-cols-2 gap-2 text-[#242424]">
@@ -254,6 +255,6 @@ export const ApplyBolBelModal: React.FC<ApplyBolBelModalProps> = ({ job, onClose
           </form>
         )}
       </div>
-    </div>
+    </Modal>
   );
 };

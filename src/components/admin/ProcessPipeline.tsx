@@ -30,6 +30,7 @@ import {
   ADMIN_SETTABLE_OUTCOMES,
   formatDateIndo,
 } from '../../domain/stateMachine.ts';
+import { Modal } from '../Modal.tsx';
 
 export const ProcessPipeline: React.FC = () => {
   const {
@@ -218,7 +219,7 @@ export const ProcessPipeline: React.FC = () => {
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span className="font-bold text-[#242424] text-sm">{proc.alumniName}</span>
                     <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold border ${outcomeConfig.badgeColor}`}
+                      className={`px-2 py-0.5 rounded text-xs font-bold border ${outcomeConfig.badgeColor}`}
                     >
                       {outcomeConfig.label}
                     </span>
@@ -228,7 +229,7 @@ export const ProcessPipeline: React.FC = () => {
                     {proc.jobTitle} • {proc.companyName}
                   </div>
 
-                  <div className="mt-3 pt-2 border-t border-[#F7F7F7] flex items-center justify-between text-[11px]">
+                  <div className="mt-3 pt-2 border-t border-[#F7F7F7] flex items-center justify-between text-xs">
                     <span className="font-semibold text-[#BD214C]">{stageConfig.label}</span>
                     <span className="text-[#595959]">
                       Update: {formatDateIndo(proc.lastStageUpdatedAt)}
@@ -281,13 +282,13 @@ export const ProcessPipeline: React.FC = () => {
             {/* Consent & Document Snapshot (PRD FR08 & FR12) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div className="p-3.5 rounded-xl bg-[#F7F7F7] border border-[#D9D9D9] space-y-1">
-                <span className="text-[#595959] block font-semibold text-[11px] uppercase tracking-wider">
+                <span className="text-[#595959] block font-semibold text-xs uppercase tracking-wider">
                   Status Persetujuan (Consent)
                 </span>
                 {activeConsent ? (
                   <div className="text-emerald-700 font-bold flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4" /> Persetujuan Aktif ({activeConsent.policyVersion})
-                    <div className="text-[10px] text-[#595959] font-normal block">
+                    <div className="text-xs text-[#595959] font-normal block">
                       Disetujui: {formatDateIndo(activeConsent.grantedAt)}
                     </div>
                   </div>
@@ -303,7 +304,7 @@ export const ProcessPipeline: React.FC = () => {
               </div>
 
               <div className="p-3.5 rounded-xl bg-[#F7F7F7] border border-[#D9D9D9] space-y-1">
-                <span className="text-[#595959] block font-semibold text-[11px] uppercase tracking-wider">
+                <span className="text-[#595959] block font-semibold text-xs uppercase tracking-wider">
                   Dokumen CV Terkunci
                 </span>
                 <div className="flex items-center gap-2">
@@ -312,7 +313,7 @@ export const ProcessPipeline: React.FC = () => {
                     {activeProcess.documentName}
                   </span>
                 </div>
-                <span className="text-[10px] text-[#595959] block">
+                <span className="text-xs text-[#595959] block">
                   ID Versi: {activeProcess.documentVersionId}
                 </span>
               </div>
@@ -327,7 +328,7 @@ export const ProcessPipeline: React.FC = () => {
                 {activeEvents.map((ev) => (
                   <div key={ev.id} className="relative pl-8 text-xs space-y-1">
                     <div className="absolute left-2 top-1.5 w-3 h-3 rounded-full bg-[#BD214C] border-2 border-white -translate-x-1/2" />
-                    <div className="flex items-center justify-between text-[#595959] text-[11px]">
+                    <div className="flex items-center justify-between text-[#595959] text-xs">
                       <span className="font-bold text-[#242424]">
                         {ev.actorName} ({ev.actorRole.toUpperCase()})
                       </span>
@@ -338,7 +339,7 @@ export const ProcessPipeline: React.FC = () => {
 
                     {ev.publicMessage && (
                       <div className="p-2.5 rounded-lg bg-[#F9EDDE] border border-[#EADBCE] text-[#242424] leading-relaxed">
-                        <span className="text-[10px] uppercase font-bold text-[#BD214C] block mb-0.5">
+                        <span className="text-xs uppercase font-bold text-[#BD214C] block mb-0.5">
                           Pesan Terbuka (Dapat Dibaca Alumni)
                         </span>
                         {ev.publicMessage}
@@ -347,7 +348,7 @@ export const ProcessPipeline: React.FC = () => {
 
                     {ev.internalNotes && (
                       <div className="p-2.5 rounded-lg bg-stone-100 border border-stone-300 text-stone-800 leading-relaxed">
-                        <span className="text-[10px] uppercase font-bold text-stone-600 flex items-center gap-1 mb-0.5">
+                        <span className="text-xs uppercase font-bold text-stone-600 flex items-center gap-1 mb-0.5">
                           <Lock className="w-3 h-3" /> Catatan Internal Gifari (Privat)
                         </span>
                         {ev.internalNotes}
@@ -363,7 +364,7 @@ export const ProcessPipeline: React.FC = () => {
 
       {/* Stage Update Modal (PRD FR08) */}
       {isUpdateModalOpen && activeProcess && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+        <Modal onClose={() => setIsUpdateModalOpen(false)} label="Perbarui tahap seleksi">
           <div className="relative bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl space-y-4">
             <button
               onClick={() => setIsUpdateModalOpen(false)}
@@ -375,7 +376,7 @@ export const ProcessPipeline: React.FC = () => {
 
             <div>
               <span className="text-xs font-bold text-[#BD214C] uppercase tracking-wider">
-                Pembaruan Status Resmi (FR08)
+                Pembaruan Status Resmi
               </span>
               <h3 className="text-lg font-bold text-[#242424] mt-0.5">
                 {activeProcess.alumniName} — {activeProcess.jobTitle}
@@ -442,7 +443,7 @@ export const ProcessPipeline: React.FC = () => {
                     required
                     className="w-full p-2.5 rounded-lg border border-[#D9D9D9] text-[#242424] focus:outline-hidden focus:border-[#BD214C]"
                   />
-                  <span className="text-[10px] text-[#595959] mt-0.5 block">Tidak boleh masa depan</span>
+                  <span className="text-xs text-[#595959] mt-0.5 block">Tidak boleh masa depan</span>
                 </div>
 
                 <div>
@@ -533,16 +534,16 @@ export const ProcessPipeline: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Forward CV Action Modal (PRD FR08 & FR07) */}
       {isForwardModalOpen && activeProcess && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+        <Modal onClose={() => setIsForwardModalOpen(false)} label="Teruskan CV ke company">
           <div className="relative bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
             <div>
               <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">
-                Verifikasi Pengiriman CV ke Company (FR08)
+                Verifikasi Pengiriman CV ke Company
               </span>
               <h3 className="text-lg font-bold text-[#242424] mt-0.5">
                 Teruskan Berkas ke {activeProcess.companyName}
@@ -588,7 +589,7 @@ export const ProcessPipeline: React.FC = () => {
                 />
               </div>
 
-              <div className="text-[11px] text-[#595959]">
+              <div className="text-xs text-[#595959]">
                 * Aksi ini otomatis menjadwalkan tugas tindak lanjut (follow-up) 7 hari kerja ke depan bagi Gifari.
               </div>
 
@@ -611,7 +612,7 @@ export const ProcessPipeline: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

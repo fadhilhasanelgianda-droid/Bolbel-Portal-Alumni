@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import {
   Briefcase,
@@ -29,6 +29,24 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
   const { currentUser, logout, processes, tasks } = useDataStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close the account menu on outside click or Esc
+  useEffect(() => {
+    if (!roleDropdownOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!accountMenuRef.current?.contains(e.target as Node)) setRoleDropdownOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setRoleDropdownOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [roleDropdownOpen]);
 
   // Unread/action counts
   const pendingProposalsCount = processes.filter(
@@ -85,7 +103,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
                 className="h-8 w-auto"
               />
               <div className="hidden sm:block">
-                <span className="text-[11px] text-[#595959] tracking-wider uppercase font-semibold block">
+                <span className="text-xs text-[#595959] tracking-wider uppercase font-semibold block">
                   Portal Karier Alumni
                 </span>
               </div>
@@ -101,6 +119,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
                 <button
                   key={tab.id}
                   onClick={() => setCurrentTab(tab.id)}
+                  aria-current={isActive ? 'page' : undefined}
                   className={`relative flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
                     isActive
                       ? 'bg-[#BD214C] text-white shadow-xs'
@@ -111,8 +130,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
                   <span>{tab.label}</span>
                   {tab.badge !== undefined && (
                     <span
-                      className={`ml-1 px-1.5 py-0.2 rounded-full text-[11px] font-bold ${
-                        isActive ? 'bg-white text-[#BD214C]' : 'bg-[#EA5543] text-white'
+                      className={`ml-1 px-1.5 py-0.2 rounded-full text-xs font-bold ${
+                        isActive ? 'bg-white text-[#BD214C]' : 'bg-[#C73A29] text-white'
                       }`}
                     >
                       {tab.badge}
@@ -125,9 +144,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
 
           {/* User Role Switcher & Profile */}
           <div className="flex items-center gap-3">
-            <div className="relative">
+            <div className="relative" ref={accountMenuRef}>
               <button
                 onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
+                aria-label={`Menu akun ${currentUser.fullName}`}
                 className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg border border-[#D9D9D9] bg-white hover:border-[#BD214C] transition-colors text-left"
                 aria-haspopup="true"
                 aria-expanded={roleDropdownOpen}
@@ -135,7 +155,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
                 <div
                   className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
                     currentUser.role === 'admin'
-                      ? 'bg-[#EA5543] text-white'
+                      ? 'bg-[#C73A29] text-white'
                       : 'bg-[#BD214C]/10 text-[#BD214C]'
                   }`}
                 >
@@ -145,16 +165,16 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
                   <div className="text-xs font-semibold text-[#242424] leading-tight flex items-center gap-1.5">
                     {currentUser.fullName}
                     <span
-                      className={`px-1.5 py-0.2 rounded text-[10px] uppercase font-bold tracking-wider ${
+                      className={`px-1.5 py-0.2 rounded text-xs uppercase font-bold tracking-wider ${
                         currentUser.role === 'admin'
-                          ? 'bg-[#EA5543] text-white'
+                          ? 'bg-[#C73A29] text-white'
                           : 'bg-[#BD214C] text-white'
                       }`}
                     >
                       {currentUser.role === 'admin' ? 'Admin' : 'Alumni'}
                     </span>
                   </div>
-                  <div className="text-[11px] text-[#595959] truncate max-w-[140px]">{currentUser.email}</div>
+                  <div className="text-xs text-[#595959] truncate max-w-[140px]">{currentUser.email}</div>
                 </div>
                 <ChevronDown className="w-4 h-4 text-[#595959]" />
               </button>
@@ -163,7 +183,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
                 <div className="absolute right-0 mt-2 w-64 rounded-xl bg-white border border-[#D9D9D9] shadow-lg py-2 z-50">
                   <div className="px-3 py-2 border-b border-[#D9D9D9]">
                     <div className="text-xs font-semibold text-[#242424]">{currentUser.fullName}</div>
-                    <div className="text-[11px] text-[#595959] truncate">{currentUser.email}</div>
+                    <div className="text-xs text-[#595959] truncate">{currentUser.email}</div>
                   </div>
                   <div className="p-1">
                     <button
@@ -184,8 +204,9 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
             {/* Mobile menu trigger */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg text-[#595959] hover:bg-[#F7F7F7]"
-              aria-label="Buka menu navigasi"
+              className="lg:hidden p-3 rounded-lg text-[#595959] hover:bg-[#F7F7F7]"
+              aria-label={mobileMenuOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -206,7 +227,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
                   setCurrentTab(tab.id);
                   setMobileMenuOpen(false);
                 }}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium ${
+                aria-current={isActive ? 'page' : undefined}
+                className={`w-full min-h-11 flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium ${
                   isActive ? 'bg-[#BD214C] text-white' : 'text-[#595959] hover:bg-[#F7F7F7]'
                 }`}
               >
@@ -215,7 +237,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab }) => 
                   <span>{tab.label}</span>
                 </div>
                 {tab.badge !== undefined && (
-                  <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-[#EA5543] text-white">
+                  <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-[#C73A29] text-white">
                     {tab.badge}
                   </span>
                 )}

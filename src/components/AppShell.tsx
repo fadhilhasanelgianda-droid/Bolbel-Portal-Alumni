@@ -53,7 +53,7 @@ const AppContent: React.FC = () => {
             <span>Portal Karier Alumni</span>
           </div>
 
-          <div className="text-[11px]">
+          <div className="text-xs">
             <span>Butuh bantuan? Hubungi talent@bolehbelajar.com</span>
           </div>
         </div>

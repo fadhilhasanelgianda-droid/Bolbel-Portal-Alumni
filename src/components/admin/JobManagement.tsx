@@ -20,6 +20,7 @@ import { useDataStore } from '../../domain/dataStore.tsx';
 import type { Job, JobStatus, ApplyChannel, SalaryType, WorkType, WorkModel, ExperienceLevel } from '../../domain/types.ts';
 import { formatCurrencyIDR, formatDateIndo } from '../../domain/stateMachine.ts';
 import { WORK_MODEL_LABEL } from '../../domain/labels.ts';
+import { Modal } from '../Modal.tsx';
 
 export const JobManagement: React.FC = () => {
   const { jobs, companies, addJob, updateJobStatus, addCompany } = useDataStore();
@@ -250,7 +251,7 @@ export const JobManagement: React.FC = () => {
                   <tr key={job.id} className="hover:bg-[#F9EDDE]/20 transition-colors">
                     <td className="px-4 py-3.5">
                       <div className="font-bold text-[#242424] text-sm">{job.title}</div>
-                      <div className="text-[11px] text-[#595959] flex items-center gap-1 mt-0.5">
+                      <div className="text-xs text-[#595959] flex items-center gap-1 mt-0.5">
                         <Building className="w-3.5 h-3.5" />
                         {job.companyName} • {job.location} ({WORK_MODEL_LABEL[job.workModel]})
                       </div>
@@ -258,7 +259,7 @@ export const JobManagement: React.FC = () => {
 
                     <td className="px-4 py-3.5">
                       <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold ${
                           job.applyChannel === 'bolbel'
                             ? 'bg-[#BD214C]/10 text-[#BD214C]'
                             : 'bg-blue-50 text-blue-700'
@@ -270,7 +271,7 @@ export const JobManagement: React.FC = () => {
 
                     <td className="px-4 py-3.5">
                       <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
                           job.status === 'published'
                             ? 'bg-emerald-100 text-emerald-800'
                             : job.status === 'paused'
@@ -283,13 +284,13 @@ export const JobManagement: React.FC = () => {
                         {job.status}
                       </span>
                       {job.closedReason && (
-                        <div className="text-[10px] text-[#595959] italic mt-0.5 max-w-[180px] truncate" title={job.closedReason}>
+                        <div className="text-xs text-[#595959] italic mt-0.5 max-w-[180px] truncate" title={job.closedReason}>
                           Alasan: {job.closedReason}
                         </div>
                       )}
                     </td>
 
-                    <td className="px-4 py-3.5 text-[11px]">
+                    <td className="px-4 py-3.5 text-xs">
                       {job.salaryType === 'range' && job.salaryMin && job.salaryMax
                         ? `${formatCurrencyIDR(job.salaryMin)} - ${formatCurrencyIDR(job.salaryMax)}`
                         : job.salaryType === 'confidential'
@@ -297,7 +298,7 @@ export const JobManagement: React.FC = () => {
                         : 'Belum Diinfokan'}
                     </td>
 
-                    <td className="px-4 py-3.5 text-[11px] text-[#595959]">
+                    <td className="px-4 py-3.5 text-xs text-[#595959]">
                       {job.deadlineDate ? formatDateIndo(job.deadlineDate) : 'Tanpa Tenggat'}
                     </td>
 
@@ -305,7 +306,7 @@ export const JobManagement: React.FC = () => {
                       {job.status === 'published' && (
                         <button
                           onClick={() => changeStatus(job.id, 'paused')}
-                          className="px-2 py-1 rounded border border-[#D9D9D9] hover:bg-stone-50 text-[11px] font-semibold text-[#595959]"
+                          className="px-2 py-1 rounded border border-[#D9D9D9] hover:bg-stone-50 text-xs font-semibold text-[#595959]"
                           title="Jeda pendaftaran"
                         >
                           Jeda
@@ -315,7 +316,7 @@ export const JobManagement: React.FC = () => {
                       {job.status === 'paused' && (
                         <button
                           onClick={() => changeStatus(job.id, 'published')}
-                          className="px-2 py-1 rounded bg-emerald-600 text-white text-[11px] font-bold"
+                          className="px-2 py-1 rounded bg-emerald-600 text-white text-xs font-bold"
                           title="Buka kembali pendaftaran"
                         >
                           Publikasikan
@@ -325,7 +326,7 @@ export const JobManagement: React.FC = () => {
                       {job.status !== 'closed' && (
                         <button
                           onClick={() => setClosingJob(job)}
-                          className="px-2 py-1 rounded border border-rose-200 hover:bg-rose-50 text-[11px] font-semibold text-rose-700"
+                          className="px-2 py-1 rounded border border-rose-200 hover:bg-rose-50 text-xs font-semibold text-rose-700"
                         >
                           Tutup
                         </button>
@@ -334,7 +335,7 @@ export const JobManagement: React.FC = () => {
                       {job.status === 'closed' && (
                         <button
                           onClick={() => changeStatus(job.id, 'published')}
-                          className="px-2 py-1 rounded border border-[#D9D9D9] hover:bg-stone-50 text-[11px] font-semibold text-[#242424]"
+                          className="px-2 py-1 rounded border border-[#D9D9D9] hover:bg-stone-50 text-xs font-semibold text-[#242424]"
                         >
                           Buka Ulang
                         </button>
@@ -350,7 +351,7 @@ export const JobManagement: React.FC = () => {
 
       {/* Add Job Modal (PRD FR04) */}
       {showAddJobModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+        <Modal onClose={() => setShowAddJobModal(false)} label="Tambah lowongan baru">
           <div className="relative bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-xl max-h-[90vh] overflow-y-auto space-y-4">
             <button
               onClick={() => setShowAddJobModal(false)}
@@ -362,7 +363,7 @@ export const JobManagement: React.FC = () => {
 
             <div>
               <span className="text-xs font-bold text-[#BD214C] uppercase tracking-wider">
-                Kurasi Lowongan Baru (PRD FR04)
+                Kurasi Lowongan Baru
               </span>
               <h2 className="text-xl font-bold text-[#242424] mt-1">Tambah Lowongan Terkurasi</h2>
             </div>
@@ -576,12 +577,12 @@ export const JobManagement: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Add Company Modal */}
       {showAddCompanyModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+        <Modal onClose={() => setShowAddCompanyModal(false)} label="Tambah company baru">
           <div className="relative bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl space-y-4">
             <button
               onClick={() => setShowAddCompanyModal(false)}
@@ -693,12 +694,12 @@ export const JobManagement: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Close Job with Mandatory Reason Modal (PRD Section 5) */}
       {closingJob && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+        <Modal onClose={() => setClosingJob(null)} label="Tutup lowongan">
           <div className="relative bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
             <div>
               <span className="text-xs font-bold text-rose-600 uppercase tracking-wider">
@@ -750,7 +751,7 @@ export const JobManagement: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

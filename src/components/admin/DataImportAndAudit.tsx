@@ -168,7 +168,7 @@ export const DataImportAndAudit: React.FC = () => {
                 <h4 className="text-xs font-bold uppercase tracking-wider text-[#595959]">
                   Hasil Validasi Impor ({parsedRows.length} Baris Terdeteksi)
                 </h4>
-                <div className="text-[11px] text-[#595959]">
+                <div className="text-xs text-[#595959]">
                   Valid: {parsedRows.filter((r) => r.isValid && !r.isDuplicate).length} baris • Bermasalah/Duplikat:{' '}
                   {parsedRows.filter((r) => !r.isValid || r.isDuplicate).length} baris
                 </div>
@@ -211,20 +211,20 @@ export const DataImportAndAudit: React.FC = () => {
                       </td>
                       <td className="px-4 py-2.5">
                         {row.isValid && !row.isDuplicate ? (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                          <span className="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800">
                             Siap Diimpor
                           </span>
                         ) : row.isDuplicate ? (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
+                          <span className="px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800">
                             Duplikat Terdaftar
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">
+                          <span className="px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-800">
                             Tidak Valid
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-2.5 text-[11px] text-rose-700">
+                      <td className="px-4 py-2.5 text-xs text-rose-700">
                         {row.errors.length > 0 ? row.errors.join('; ') : '-'}
                       </td>
                     </tr>
@@ -241,7 +241,7 @@ export const DataImportAndAudit: React.FC = () => {
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#595959]">
               Daftar Riwayat Persetujuan Pembagian CV &amp; Profil
             </h4>
-            <p className="text-[11px] text-[#595959] mt-0.5">
+            <p className="text-xs text-[#595959] mt-0.5">
               Setiap lamaran mencatat persetujuan aktif spesifik per lowongan. Penarikan izin dicatat tanpa menghapus
               bukti legalitas riwayat.
             </p>
@@ -269,25 +269,25 @@ export const DataImportAndAudit: React.FC = () => {
                 ) : (
                   consents.map((c) => (
                     <tr key={c.id} className="hover:bg-[#F9EDDE]/20 transition-colors">
-                      <td className="px-4 py-3 font-mono text-[11px]">{c.id}</td>
+                      <td className="px-4 py-3 font-mono text-xs">{c.id}</td>
                       <td className="px-4 py-3 font-medium">
                         {c.jobTitle} <span className="text-[#595959]">({c.companyName})</span>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-1.5 text-[11px]">
+                        <div className="flex items-center gap-1.5 text-xs">
                           <FileText className="w-3.5 h-3.5 text-[#BD214C]" />
                           <span>{c.documentName}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-[#595959] font-mono text-[11px]">{c.policyVersion}</td>
-                      <td className="px-4 py-3 text-[#595959] text-[11px]">{formatDateIndo(c.grantedAt)}</td>
+                      <td className="px-4 py-3 text-[#595959] font-mono text-xs">{c.policyVersion}</td>
+                      <td className="px-4 py-3 text-[#595959] text-xs">{formatDateIndo(c.grantedAt)}</td>
                       <td className="px-4 py-3">
                         {c.revokedAt ? (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">
+                          <span className="px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-800">
                             Dicabut pada {formatDateIndo(c.revokedAt)}
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                          <span className="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800">
                             Aktif Valid
                           </span>
                         )}

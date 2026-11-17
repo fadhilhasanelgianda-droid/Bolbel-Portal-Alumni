@@ -8,6 +8,25 @@
   }
 }
 
+/* Keyboard focus must be visible everywhere. Unlayered on purpose: it wins over the per-input `focus:outline-hidden`
+   utilities, which otherwise leave only a 1px border colour change as the indicator. */
+:focus-visible {
+  outline: 2px solid #BD214C;
+  outline-offset: 2px;
+}
+
+/* Touch devices: comfortable tap targets (44px) for every button and field */
+@layer base {
+  @media (pointer: coarse) {
+    button,
+    select,
+    summary,
+    input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
+      min-height: 44px;
+    }
+  }
+}
+
 /* Custom scrollbars and utility styling */
 ::-webkit-scrollbar {
   width: 6px;

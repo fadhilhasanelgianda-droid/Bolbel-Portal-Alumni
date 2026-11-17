@@ -17,6 +17,7 @@ import type { Job } from '../../domain/types.ts';
 import { formatCurrencyIDR, formatDateIndo, STAGE_CONFIG } from '../../domain/stateMachine.ts';
 import { useDataStore } from '../../domain/dataStore.tsx';
 import { WORK_MODEL_LABEL, WORK_TYPE_LABEL } from '../../domain/labels.ts';
+import { Modal } from '../Modal.tsx';
 
 interface JobDetailModalProps {
   job: Job;
@@ -36,7 +37,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
   const isPaused = job.status === 'paused';
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+    <Modal onClose={onClose} label="Detail lowongan" closeOnBackdrop>
       <div className="relative bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-xl max-h-[90vh] overflow-y-auto">
         {/* Close Button */}
         <button
@@ -196,6 +197,6 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };

@@ -103,7 +103,7 @@ export const JobList: React.FC<{ onGoToProfile?: () => void; onGoToApplications?
             />
           </div>
 
-          <div className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
+          <div className="grid grid-cols-1 sm:flex sm:flex-nowrap gap-2 sm:items-center">
             {/* Cara Kerja Filter */}
             <select
               value={selectedModel}
@@ -214,7 +214,7 @@ export const JobList: React.FC<{ onGoToProfile?: () => void; onGoToApplications?
                     </span>
 
                     {isPaused && (
-                      <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                      <span className="px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
                         Pendaftaran Dijeda
                       </span>
                     )}

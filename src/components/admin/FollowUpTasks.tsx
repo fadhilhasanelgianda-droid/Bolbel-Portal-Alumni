@@ -15,6 +15,7 @@ import {
 import { useDataStore } from '../../domain/dataStore.tsx';
 import type { FollowUpTask, FollowUpTaskType } from '../../domain/types.ts';
 import { formatDateIndo } from '../../domain/stateMachine.ts';
+import { Modal } from '../Modal.tsx';
 
 export const FollowUpTasks: React.FC = () => {
   const { tasks, toggleTaskStatus, createFollowUpTask } = useDataStore();
@@ -175,7 +176,7 @@ export const FollowUpTasks: React.FC = () => {
                       {task.title}
                     </h3>
                     <p className="text-xs text-[#595959] mt-0.5">{task.description}</p>
-                    <div className="flex flex-wrap items-center gap-2 mt-2 text-[10px]">
+                    <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
                       <span className="px-2 py-0.5 rounded bg-[#F7F7F7] border border-[#D9D9D9] text-[#242424] font-medium uppercase">
                         {task.taskType.replace(/_/g, ' ')}
                       </span>
@@ -191,7 +192,7 @@ export const FollowUpTasks: React.FC = () => {
 
                 <div className="text-right shrink-0">
                   <span
-                    className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                    className={`inline-block px-2 py-0.5 rounded text-xs font-bold uppercase ${
                       isCompleted
                         ? 'bg-emerald-100 text-emerald-800'
                         : isOverdue
@@ -201,7 +202,7 @@ export const FollowUpTasks: React.FC = () => {
                   >
                     {isCompleted ? 'Selesai' : isOverdue ? 'Terlambat' : 'Jatuh Tempo'}
                   </span>
-                  <div className="text-[11px] text-[#595959] mt-1 flex items-center justify-end gap-1">
+                  <div className="text-xs text-[#595959] mt-1 flex items-center justify-end gap-1">
                     <Calendar className="w-3 h-3" /> {formatDateIndo(task.dueAt)}
                   </div>
                 </div>
@@ -213,7 +214,7 @@ export const FollowUpTasks: React.FC = () => {
 
       {/* Add Task Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+        <Modal onClose={() => setShowAddModal(false)} label="Tugas tindak lanjut baru">
           <div className="relative bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
             <button
               onClick={() => setShowAddModal(false)}
@@ -225,7 +226,7 @@ export const FollowUpTasks: React.FC = () => {
 
             <div>
               <span className="text-xs font-bold text-[#BD214C] uppercase tracking-wider">
-                Tugas Follow-Up Baru (FR09)
+                Tugas Follow-Up Baru
               </span>
               <h3 className="text-lg font-bold text-[#242424] mt-0.5">Tambah Catatan Tugas Admin</h3>
             </div>
@@ -314,7 +315,7 @@ export const FollowUpTasks: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

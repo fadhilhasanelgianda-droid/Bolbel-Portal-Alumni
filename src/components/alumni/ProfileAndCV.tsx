@@ -80,6 +80,7 @@ export const ProfileAndCV: React.FC = () => {
   const [locationInput, setLocationInput] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [opennessError, setOpennessError] = useState<string | null>(null);
 
   // Freshness check (PRD FR02: > 30 days triggers "Perlu konfirmasi")
   const freshness = isProfileFresh(currentProfile?.availabilityConfirmedAt);
@@ -113,7 +114,8 @@ export const ProfileAndCV: React.FC = () => {
     setSaveError(null);
     if (formData.opennessStatus === 'belum_dikonfirmasi') {
       setSaveSuccess(false);
-      setSaveError('Pilih keterbukaanmu terhadap peluang kerja sebelum menyimpan.');
+      setOpennessError('Pilih keterbukaanmu terhadap peluang kerja sebelum menyimpan.');
+      document.getElementById('openness-status-select')?.focus();
       return;
     }
     const res = await updateProfile(formData);
@@ -222,7 +224,7 @@ export const ProfileAndCV: React.FC = () => {
                   Status Kesegaran Ketersediaan Alumni
                 </h3>
                 <span
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                  className={`px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider ${
                     freshness.isFresh
                       ? 'bg-emerald-100 text-emerald-800'
                       : 'bg-amber-200 text-amber-900 animate-pulse'
@@ -264,23 +266,25 @@ export const ProfileAndCV: React.FC = () => {
             </div>
 
             {/* Upload Area */}
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-[#D9D9D9] hover:border-[#BD214C] rounded-xl p-5 text-center cursor-pointer bg-[#F7F7F7] hover:bg-white transition-all group"
+            <input
+              ref={fileInputRef}
+              id="cv-file-input"
+              type="file"
+              accept="application/pdf"
+              onChange={handleFileUpload}
+              className="sr-only peer"
+            />
+            {/* Label tied to a real (visually hidden) input: reachable by Tab, activated with Enter/Space */}
+            <label
+              htmlFor="cv-file-input"
+              className="block border-2 border-dashed border-[#D9D9D9] hover:border-[#BD214C] peer-focus-visible:border-[#BD214C] peer-focus-visible:ring-2 peer-focus-visible:ring-[#BD214C]/40 rounded-xl p-5 text-center cursor-pointer bg-[#F7F7F7] hover:bg-white transition-all group"
             >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="application/pdf"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-              <UploadCloud className="w-8 h-8 text-[#595959] group-hover:text-[#BD214C] mx-auto mb-2 transition-colors" />
+              <UploadCloud className="w-8 h-8 text-[#595959] group-hover:text-[#BD214C] mx-auto mb-2 transition-colors" aria-hidden="true" />
               <div className="text-xs font-bold text-[#242424]">
                 {isUploading ? 'Sedang Memeriksa File...' : 'Klik untuk Unggah CV Baru'}
               </div>
-              <p className="text-[11px] text-[#595959] mt-0.5">Format PDF saja, maksimal 5 MB</p>
-            </div>
+              <p className="text-xs text-[#595959] mt-0.5">Format PDF saja, maksimal 5 MB</p>
+            </label>
 
             {uploadError && (
               <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
@@ -320,7 +324,7 @@ export const ProfileAndCV: React.FC = () => {
                       />
                       <div className="truncate">
                         <div className="font-bold text-[#242424] truncate">{cv.fileName}</div>
-                        <div className="text-[11px] text-[#595959]">
+                        <div className="text-xs text-[#595959]">
                           {(cv.fileSizeBytes / 1024 / 1024).toFixed(2)} MB • {formatDateIndo(cv.uploadedAt)}
                         </div>
                       </div>
@@ -328,13 +332,13 @@ export const ProfileAndCV: React.FC = () => {
 
                     <div className="flex items-center gap-1.5 shrink-0">
                       {cv.isCurrentActive ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#BD214C] text-white">
+                        <span className="px-2 py-0.5 rounded text-xs font-bold bg-[#BD214C] text-white">
                           Aktif
                         </span>
                       ) : (
                         <button
                           onClick={() => setActiveCV(cv.id)}
-                          className="px-2 py-0.5 rounded text-[10px] font-semibold border border-[#D9D9D9] hover:border-[#BD214C] text-[#242424]"
+                          className="px-2 py-0.5 rounded text-xs font-semibold border border-[#D9D9D9] hover:border-[#BD214C] text-[#242424]"
                         >
                           Pilih Aktif
                         </button>
@@ -400,8 +404,9 @@ export const ProfileAndCV: React.FC = () => {
             {/* Identitas Terverifikasi */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
-                <label className="block font-bold text-[#242424] mb-1">Nama Lengkap (Dari Roster)</label>
+                <label htmlFor="user-fullname" className="block font-bold text-[#242424] mb-1">Nama Lengkap (Dari Roster)</label>
                 <input
+                  id="user-fullname"
                   type="text"
                   value={formData.fullName}
                   disabled
@@ -409,8 +414,9 @@ export const ProfileAndCV: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block font-bold text-[#242424] mb-1">Email Terverifikasi</label>
+                <label htmlFor="user-email" className="block font-bold text-[#242424] mb-1">Email Terverifikasi</label>
                 <input
+                  id="user-email"
                   type="email"
                   value={formData.email}
                   disabled
@@ -418,8 +424,9 @@ export const ProfileAndCV: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block font-bold text-[#242424] mb-1">Program & Batch</label>
+                <label htmlFor="user-program" className="block font-bold text-[#242424] mb-1">Program & Batch</label>
                 <input
+                  id="user-program"
                   type="text"
                   value={formData.program ? `${formData.program} - ${formData.batch}` : 'Sesuai data roster alumni'}
                   disabled
@@ -466,10 +473,15 @@ export const ProfileAndCV: React.FC = () => {
                 <select
                   id="openness-status-select"
                   value={formData.opennessStatus}
-                  onChange={(e) =>
-                    setFormData({ ...formData, opennessStatus: e.target.value as OpennessStatus })
-                  }
-                  className="w-full p-2.5 rounded-lg border border-[#D9D9D9] text-[#242424] bg-white focus:outline-hidden focus:border-[#BD214C]"
+                  onChange={(e) => {
+                    setOpennessError(null);
+                    setFormData({ ...formData, opennessStatus: e.target.value as OpennessStatus });
+                  }}
+                  aria-invalid={opennessError ? true : undefined}
+                  aria-describedby={opennessError ? 'openness-status-error' : undefined}
+                  className={`w-full p-2.5 rounded-lg border text-[#242424] bg-white focus:outline-hidden focus:border-[#BD214C] ${
+                    opennessError ? 'border-rose-500' : 'border-[#D9D9D9]'
+                  }`}
                 >
                   <option value="belum_dikonfirmasi" disabled>
                     Pilih salah satu…
@@ -478,6 +490,11 @@ export const ProfileAndCV: React.FC = () => {
                   <option value="terbuka">Terbuka Jika Ada yang Sesuai</option>
                   <option value="tidak_mencari">Tidak Sedang Mencari</option>
                 </select>
+                {opennessError && (
+                  <p id="openness-status-error" role="alert" className="mt-1 text-xs text-rose-700">
+                    {opennessError}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -548,6 +565,7 @@ export const ProfileAndCV: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleRemoveRole(r)}
+                        aria-label={`Hapus target posisi ${r}`}
                         className="text-[#595959] hover:text-rose-600 font-bold"
                       >
                         ×
@@ -559,10 +577,10 @@ export const ProfileAndCV: React.FC = () => {
 
               {/* Work Types */}
               <div>
-                <label className="block font-bold text-[#242424] mb-1">
+                <span id="work-types-label" className="block font-bold text-[#242424] mb-1">
                   Jenis Pekerjaan <span className="text-[#BD214C]">*</span>
-                </label>
-                <div className="flex flex-wrap gap-2">
+                </span>
+                <div role="group" aria-labelledby="work-types-label" className="flex flex-wrap gap-2">
                   {(
                     [
                       ['full_time', 'Full Time'],
@@ -594,8 +612,8 @@ export const ProfileAndCV: React.FC = () => {
 
               {/* Work Models */}
               <div>
-                <label className="block font-bold text-[#242424] mb-1">Model Kerja yang Dipertimbangkan <span className="text-[#BD214C]">*</span></label>
-                <div className="flex flex-wrap gap-2">
+                <span id="work-models-label" className="block font-bold text-[#242424] mb-1">Model Kerja yang Dipertimbangkan <span className="text-[#BD214C]">*</span></span>
+                <div role="group" aria-labelledby="work-models-label" className="flex flex-wrap gap-2">
                   {(['wfo', 'hybrid', 'remote'] as WorkModel[]).map((m) => {
                     const active = formData.targetWorkModels.includes(m);
                     return (
@@ -603,6 +621,7 @@ export const ProfileAndCV: React.FC = () => {
                         key={m}
                         type="button"
                         onClick={() => toggleWorkModel(m)}
+                        aria-pressed={active}
                         className={`px-3 py-1.5 rounded-lg border text-xs font-semibold uppercase ${
                           active
                             ? 'bg-[#BD214C] text-white border-[#BD214C]'

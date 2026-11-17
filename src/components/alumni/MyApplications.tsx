@@ -24,6 +24,7 @@ import {
   OUTCOME_CONFIG,
   formatDateIndo,
 } from '../../domain/stateMachine.ts';
+import { Modal } from '../Modal.tsx';
 
 export const MyApplications: React.FC = () => {
   const {
@@ -211,11 +212,11 @@ export const MyApplications: React.FC = () => {
                 >
                   <div className="flex items-center justify-between gap-2 mb-1.5">
                     <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold border ${outcomeConfig.badgeColor}`}
+                      className={`px-2 py-0.5 rounded text-xs font-bold border ${outcomeConfig.badgeColor}`}
                     >
                       {outcomeConfig.label}
                     </span>
-                    <span className="text-[11px] text-[#595959] flex items-center gap-1">
+                    <span className="text-xs text-[#595959] flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {formatDateIndo(proc.lastStageUpdatedAt)}
                     </span>
@@ -229,7 +230,7 @@ export const MyApplications: React.FC = () => {
 
                   <div className="mt-3 pt-2.5 border-t border-[#F7F7F7] flex items-center justify-between text-xs">
                     <span className="font-semibold text-[#BD214C]">{stageConfig.label}</span>
-                    <span className="text-[11px] text-[#595959]">
+                    <span className="text-xs text-[#595959]">
                       {proc.origin === 'internal_apply'
                         ? 'Via BolBel'
                         : proc.origin === 'external_report'
@@ -301,10 +302,10 @@ export const MyApplications: React.FC = () => {
                             : 'bg-[#F7F7F7] text-[#595959] border-[#D9D9D9]'
                         }`}
                       >
-                        <span className="text-[10px] uppercase font-bold tracking-wider block opacity-75">
+                        <span className="text-xs uppercase font-bold tracking-wider block opacity-75">
                           Tahap {idx + 1}
                         </span>
-                        <span className="font-semibold text-[11px] leading-tight mt-0.5">
+                        <span className="font-semibold text-xs leading-tight mt-0.5">
                           {STAGE_CONFIG[stageKey]?.label}
                         </span>
                       </div>
@@ -328,11 +329,11 @@ export const MyApplications: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <FileText className="w-4 h-4 text-[#BD214C]" />
                   <div>
-                    <span className="text-[#595959] block text-[11px]">Versi CV saat submit:</span>
+                    <span className="text-[#595959] block text-xs">Versi CV saat submit:</span>
                     <span className="font-bold text-[#242424]">{activeProcess.documentName}</span>
                   </div>
                 </div>
-                <span className="text-[10px] text-[#595959] italic">Terkunci ke lamaran ini</span>
+                <span className="text-xs text-[#595959] italic">Terkunci ke lamaran ini</span>
               </div>
 
               {/* Timeline of events (Official updates from Gifari & BolBel) */}
@@ -347,7 +348,7 @@ export const MyApplications: React.FC = () => {
                     {activeEvents.map((ev) => (
                       <div key={ev.id} className="relative pl-8 text-xs space-y-1">
                         <div className="absolute left-2 top-1.5 w-3 h-3 rounded-full bg-[#BD214C] border-2 border-white -translate-x-1/2" />
-                        <div className="flex items-center justify-between text-[#595959] text-[11px]">
+                        <div className="flex items-center justify-between text-[#595959] text-xs">
                           <span className="font-bold text-[#242424]">{ev.actorName}</span>
                           <span>
                             Dicatat: {formatDateIndo(ev.recordedAt)}
@@ -376,7 +377,7 @@ export const MyApplications: React.FC = () => {
 
       {/* Withdraw Confirmation Modal */}
       {withdrawTargetProcess && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+        <Modal onClose={isProcessing ? () => undefined : () => setWithdrawTargetProcess(null)} label="Konfirmasi tarik diri">
           <div className="relative bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
             <h3 className="text-lg font-bold text-[#242424]">Konfirmasi Penarikan Diri</h3>
             <p className="text-xs text-[#595959] mt-1 leading-relaxed">
@@ -429,7 +430,7 @@ export const MyApplications: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

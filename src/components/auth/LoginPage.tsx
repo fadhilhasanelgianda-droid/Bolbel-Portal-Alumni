@@ -31,6 +31,8 @@ export const LoginPage: React.FC<{ onAuthenticated: () => void }> = ({ onAuthent
   // Seconds before the same link can be requested again; also tells the user the first request went through
   const [cooldown, setCooldown] = useState(0);
   const [linkSent, setLinkSent] = useState(false);
+  // Validation message tied to one field (shown under it, announced via aria-describedby)
+  const [fieldError, setFieldError] = useState<{ field: 'password' | 'confirm'; message: string } | null>(null);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -50,16 +52,24 @@ export const LoginPage: React.FC<{ onAuthenticated: () => void }> = ({ onAuthent
     setConfirm('');
     setLinkSent(false);
     setCooldown(0);
+    setFieldError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setNotice(null);
+    setFieldError(null);
 
     if (mode === 'set-password') {
-      if (password.length < 10) return setError('Password minimal 10 karakter.');
-      if (password !== confirm) return setError('Konfirmasi password tidak sama.');
+      if (password.length < 10) {
+        setFieldError({ field: 'password', message: 'Password minimal 10 karakter.' });
+        return document.getElementById('auth-password')?.focus();
+      }
+      if (password !== confirm) {
+        setFieldError({ field: 'confirm', message: 'Konfirmasi password tidak sama dengan password di atas.' });
+        return document.getElementById('auth-confirm')?.focus();
+      }
     }
 
     setSubmitting(true);
@@ -110,7 +120,7 @@ export const LoginPage: React.FC<{ onAuthenticated: () => void }> = ({ onAuthent
             className="h-[42px] w-auto"
           />
           <div className="text-center">
-            <span className="text-[11px] text-[#595959] tracking-wider uppercase font-semibold block">
+            <span className="text-xs text-[#595959] tracking-wider uppercase font-semibold block">
               Portal Karier Alumni
             </span>
           </div>
@@ -192,12 +202,24 @@ export const LoginPage: React.FC<{ onAuthenticated: () => void }> = ({ onAuthent
                   type="password"
                   autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                   required
-                  minLength={mode === 'set-password' ? 10 : undefined}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={inputClass}
+                  aria-invalid={fieldError?.field === 'password' ? true : undefined}
+                  aria-describedby={
+                    mode === 'set-password' ? (fieldError?.field === 'password' ? 'auth-password-error' : 'auth-password-hint') : undefined
+                  }
+                  className={`${inputClass} ${fieldError?.field === 'password' ? 'border-rose-500' : ''}`}
                 />
-                {mode === 'set-password' && <p className="mt-1 text-[11px] text-[#595959]">Minimal 10 karakter.</p>}
+                {mode === 'set-password' &&
+                  (fieldError?.field === 'password' ? (
+                    <p id="auth-password-error" role="alert" className="mt-1 text-xs text-rose-700">
+                      {fieldError.message}
+                    </p>
+                  ) : (
+                    <p id="auth-password-hint" className="mt-1 text-xs text-[#595959]">
+                      Minimal 10 karakter.
+                    </p>
+                  ))}
               </div>
             )}
             {mode === 'set-password' && (
@@ -212,8 +234,15 @@ export const LoginPage: React.FC<{ onAuthenticated: () => void }> = ({ onAuthent
                   required
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
-                  className={inputClass}
+                  aria-invalid={fieldError?.field === 'confirm' ? true : undefined}
+                  aria-describedby={fieldError?.field === 'confirm' ? 'auth-confirm-error' : undefined}
+                  className={`${inputClass} ${fieldError?.field === 'confirm' ? 'border-rose-500' : ''}`}
                 />
+                {fieldError?.field === 'confirm' && (
+                  <p id="auth-confirm-error" role="alert" className="mt-1 text-xs text-rose-700">
+                    {fieldError.message}
+                  </p>
+                )}
               </div>
             )}
 
@@ -243,7 +272,7 @@ export const LoginPage: React.FC<{ onAuthenticated: () => void }> = ({ onAuthent
           </form>
         </div>
 
-        <p className="mt-4 text-center text-[11px] text-[#595959]">
+        <p className="mt-4 text-center text-xs text-[#595959]">
           Butuh bantuan? Hubungi talent@bolehbelajar.com
         </p>
       </div>
