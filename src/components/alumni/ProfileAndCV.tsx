@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useRef } from 'react';
 import {
   User,
@@ -26,6 +28,7 @@ import type {
   AlumniProfile,
 } from '../../domain/types.ts';
 import { isProfileFresh, formatDateIndo } from '../../domain/stateMachine.ts';
+import { cvDownloadUrl } from '../../client/api.ts';
 
 export const ProfileAndCV: React.FC = () => {
   const {
@@ -56,18 +59,19 @@ export const ProfileAndCV: React.FC = () => {
       whatsappContact: true,
       linkedinUrl: '',
       portfolioUrl: '',
-      program: 'Full Course',
-      batch: 'Batch 10',
+      program: '',
+      batch: '',
       employmentStatus: 'belum_bekerja',
-      opennessStatus: 'aktif_mencari',
-      startReadiness: 'segera',
-      targetRoles: ['Digital Marketing Specialist'],
-      targetWorkTypes: ['full_time'],
-      targetWorkModels: ['hybrid', 'remote'],
-      domicile: 'Jakarta Selatan',
-      targetLocations: ['Jakarta'],
-      experienceBand: '1-2_tahun',
-      allowProactiveContact: true,
+      opennessStatus: 'belum_dikonfirmasi',
+      startReadiness: 'diskusi',
+      targetRoles: [],
+      targetWorkTypes: [],
+      targetWorkModels: [],
+      domicile: '',
+      targetLocations: [],
+      experienceBand: '<1_tahun',
+      // Opt-in: proactive offers need the alumnus's explicit choice
+      allowProactiveContact: false,
       availabilityConfirmedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -76,6 +80,8 @@ export const ProfileAndCV: React.FC = () => {
   const [roleInput, setRoleInput] = useState('');
   const [locationInput, setLocationInput] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [opennessError, setOpennessError] = useState<string | null>(null);
 
   // Freshness check (PRD FR02: > 30 days triggers "Perlu konfirmasi")
   const freshness = isProfileFresh(currentProfile?.availabilityConfirmedAt);
@@ -104,15 +110,36 @@ export const ProfileAndCV: React.FC = () => {
     }
   };
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile(formData);
+    setSaveError(null);
+    if (formData.opennessStatus === 'belum_dikonfirmasi') {
+      setSaveSuccess(false);
+      setOpennessError('Pilih keterbukaanmu terhadap peluang kerja sebelum menyimpan.');
+      document.getElementById('openness-status-select')?.focus();
+      return;
+    }
+    const res = await updateProfile(formData);
+    if (!res.success) {
+      setSaveSuccess(false);
+      setSaveError(res.error ?? 'Gagal menyimpan profil.');
+      return;
+    }
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };
 
-  const handleQuickConfirmAvailability = () => {
-    confirmAvailability(currentUser.id);
+  const handleQuickConfirmAvailability = async () => {
+    if (!currentProfile) {
+      setSaveError('Simpan profilmu terlebih dahulu sebelum mengonfirmasi ketersediaan.');
+      return;
+    }
+    setSaveError(null);
+    const res = await confirmAvailability(currentUser.id);
+    if (!res.success) {
+      setSaveError(res.error ?? 'Gagal mengonfirmasi ketersediaan.');
+      return;
+    }
     setFormData((prev) => ({
       ...prev,
       availabilityConfirmedAt: new Date().toISOString(),
@@ -198,7 +225,7 @@ export const ProfileAndCV: React.FC = () => {
                   Status Kesegaran Ketersediaan Alumni
                 </h3>
                 <span
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                  className={`px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider ${
                     freshness.isFresh
                       ? 'bg-emerald-100 text-emerald-800'
                       : 'bg-amber-200 text-amber-900 animate-pulse'
@@ -211,7 +238,7 @@ export const ProfileAndCV: React.FC = () => {
                 {freshness.isFresh
                   ? `Terakhir dikonfirmasi ${freshness.daysAgo} hari yang lalu (${formatDateIndo(
                       currentProfile?.availabilityConfirmedAt
-                    )}). Profilmu aktif diprioritaskan saat pencarian talent.`
+                    )}). Profilmu aktif diprioritaskan saat pencarian kandidat.`
                   : `Sudah ${freshness.daysAgo} hari kamu belum mengonfirmasi ketersediaan kerja. Harap perbarui agar tim BolBel mengetahui status ketersediaanmu.`}
               </p>
             </div>
@@ -234,29 +261,31 @@ export const ProfileAndCV: React.FC = () => {
               <div>
                 <h3 className="text-base font-bold text-[#242424]">Pengelolaan CV Berversi</h3>
                 <p className="text-xs text-[#595959]">
-                  Dokumen privat (PDF maks 5 MB). Penggantian CV tidak mengubah versi pada lamaran yang sudah dikirim.
+                  Dokumen privat (PDF maks 4 MB). Penggantian CV tidak mengubah versi pada lamaran yang sudah dikirim.
                 </p>
               </div>
             </div>
 
             {/* Upload Area */}
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-[#D9D9D9] hover:border-[#BD214C] rounded-xl p-5 text-center cursor-pointer bg-[#F7F7F7] hover:bg-white transition-all group"
+            <input
+              ref={fileInputRef}
+              id="cv-file-input"
+              type="file"
+              accept="application/pdf"
+              onChange={handleFileUpload}
+              className="sr-only peer"
+            />
+            {/* Label tied to a real (visually hidden) input: reachable by Tab, activated with Enter/Space */}
+            <label
+              htmlFor="cv-file-input"
+              className="block border-2 border-dashed border-[#D9D9D9] hover:border-[#BD214C] peer-focus-visible:border-[#BD214C] peer-focus-visible:ring-2 peer-focus-visible:ring-[#BD214C]/40 rounded-xl p-5 text-center cursor-pointer bg-[#F7F7F7] hover:bg-white transition-all group"
             >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="application/pdf"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-              <UploadCloud className="w-8 h-8 text-[#595959] group-hover:text-[#BD214C] mx-auto mb-2 transition-colors" />
+              <UploadCloud className="w-8 h-8 text-[#595959] group-hover:text-[#BD214C] mx-auto mb-2 transition-colors" aria-hidden="true" />
               <div className="text-xs font-bold text-[#242424]">
                 {isUploading ? 'Sedang Memeriksa File...' : 'Klik untuk Unggah CV Baru'}
               </div>
-              <p className="text-[11px] text-[#595959] mt-0.5">Format PDF saja, maksimal 5 MB</p>
-            </div>
+              <p className="text-xs text-[#595959] mt-0.5">Format PDF saja, maksimal 4 MB</p>
+            </label>
 
             {uploadError && (
               <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
@@ -296,7 +325,7 @@ export const ProfileAndCV: React.FC = () => {
                       />
                       <div className="truncate">
                         <div className="font-bold text-[#242424] truncate">{cv.fileName}</div>
-                        <div className="text-[11px] text-[#595959]">
+                        <div className="text-xs text-[#595959]">
                           {(cv.fileSizeBytes / 1024 / 1024).toFixed(2)} MB • {formatDateIndo(cv.uploadedAt)}
                         </div>
                       </div>
@@ -304,29 +333,35 @@ export const ProfileAndCV: React.FC = () => {
 
                     <div className="flex items-center gap-1.5 shrink-0">
                       {cv.isCurrentActive ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#BD214C] text-white">
+                        <span className="px-2 py-0.5 rounded text-xs font-bold bg-[#BD214C] text-white">
                           Aktif
                         </span>
                       ) : (
                         <button
                           onClick={() => setActiveCV(cv.id)}
-                          className="px-2 py-0.5 rounded text-[10px] font-semibold border border-[#D9D9D9] hover:border-[#BD214C] text-[#242424]"
+                          className="px-2 py-0.5 rounded text-xs font-semibold border border-[#D9D9D9] hover:border-[#BD214C] text-[#242424]"
                         >
                           Pilih Aktif
                         </button>
                       )}
 
-                      <button
-                        onClick={() => alert(`Simulasi unduh privat untuk ${cv.fileName} (Link berlaku 5 menit)`)}
-                        title="Unduh CV (URL Privat berlaku 5 menit)"
+                      <a
+                        href={cvDownloadUrl(cv.id)}
+                        download
+                        title="Unduh CV"
+                        aria-label={`Unduh ${cv.fileName}`}
                         className="p-1 text-[#595959] hover:text-[#BD214C]"
                       >
                         <Download className="w-3.5 h-3.5" />
-                      </button>
+                      </a>
 
                       {!cv.isCurrentActive && (
                         <button
-                          onClick={() => deleteCV(cv.id)}
+                          onClick={async () => {
+                            if (!window.confirm(`Hapus "${cv.fileName}"? Tindakan ini tidak bisa dibatalkan.`)) return;
+                            const res = await deleteCV(cv.id);
+                            if (!res.success) setUploadError(res.error ?? 'Gagal menghapus CV.');
+                          }}
                           title="Hapus versi lama"
                           className="p-1 text-[#595959] hover:text-rose-600"
                         >
@@ -351,7 +386,8 @@ export const ProfileAndCV: React.FC = () => {
               <div>
                 <h3 className="text-lg font-bold text-[#242424]">Profil & Preferensi Karier</h3>
                 <p className="text-xs text-[#595959]">
-                  Digunakan untuk verifikasi ketersediaan dan kriteria pencarian kandidat oleh admin.
+                  Digunakan untuk verifikasi ketersediaan dan kriteria pencarian kandidat oleh admin. Kolom bertanda{' '}
+                  <span className="text-[#BD214C]">*</span> wajib diisi sebelum kamu bisa melamar.
                 </p>
               </div>
 
@@ -362,11 +398,18 @@ export const ProfileAndCV: React.FC = () => {
               )}
             </div>
 
+            {saveError && (
+              <div role="alert" className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700">
+                {saveError}
+              </div>
+            )}
+
             {/* Identitas Terverifikasi */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
-                <label className="block font-bold text-[#242424] mb-1">Nama Lengkap (Dari Roster)</label>
+                <label htmlFor="user-fullname" className="block font-bold text-[#242424] mb-1">Nama Lengkap (Dari Roster)</label>
                 <input
+                  id="user-fullname"
                   type="text"
                   value={formData.fullName}
                   disabled
@@ -374,8 +417,9 @@ export const ProfileAndCV: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block font-bold text-[#242424] mb-1">Email Terverifikasi</label>
+                <label htmlFor="user-email" className="block font-bold text-[#242424] mb-1">Email Terverifikasi</label>
                 <input
+                  id="user-email"
                   type="email"
                   value={formData.email}
                   disabled
@@ -383,10 +427,11 @@ export const ProfileAndCV: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block font-bold text-[#242424] mb-1">Program & Batch</label>
+                <label htmlFor="user-program" className="block font-bold text-[#242424] mb-1">Program & Batch</label>
                 <input
+                  id="user-program"
                   type="text"
-                  value={`${formData.program} - ${formData.batch}`}
+                  value={formData.program ? `${formData.program} - ${formData.batch}` : 'Sesuai data roster alumni'}
                   disabled
                   className="w-full p-2.5 rounded-lg border border-[#D9D9D9] bg-[#F7F7F7] text-[#595959] cursor-not-allowed"
                 />
@@ -431,15 +476,28 @@ export const ProfileAndCV: React.FC = () => {
                 <select
                   id="openness-status-select"
                   value={formData.opennessStatus}
-                  onChange={(e) =>
-                    setFormData({ ...formData, opennessStatus: e.target.value as OpennessStatus })
-                  }
-                  className="w-full p-2.5 rounded-lg border border-[#D9D9D9] text-[#242424] bg-white focus:outline-hidden focus:border-[#BD214C]"
+                  onChange={(e) => {
+                    setOpennessError(null);
+                    setFormData({ ...formData, opennessStatus: e.target.value as OpennessStatus });
+                  }}
+                  aria-invalid={opennessError ? true : undefined}
+                  aria-describedby={opennessError ? 'openness-status-error' : undefined}
+                  className={`w-full p-2.5 rounded-lg border text-[#242424] bg-white focus:outline-hidden focus:border-[#BD214C] ${
+                    opennessError ? 'border-rose-500' : 'border-[#D9D9D9]'
+                  }`}
                 >
+                  <option value="belum_dikonfirmasi" disabled>
+                    Pilih salah satu…
+                  </option>
                   <option value="aktif_mencari">Aktif Mencari Peluang</option>
                   <option value="terbuka">Terbuka Jika Ada yang Sesuai</option>
                   <option value="tidak_mencari">Tidak Sedang Mencari</option>
                 </select>
+                {opennessError && (
+                  <p id="openness-status-error" role="alert" className="mt-1 text-xs text-rose-700">
+                    {opennessError}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -449,16 +507,62 @@ export const ProfileAndCV: React.FC = () => {
                 <select
                   id="start-readiness-select"
                   value={formData.startReadiness}
-                  onChange={(e) =>
-                    setFormData({ ...formData, startReadiness: e.target.value as StartReadiness })
-                  }
+                  onChange={(e) => {
+                    const startReadiness = e.target.value as StartReadiness;
+                    setFormData({
+                      ...formData,
+                      startReadiness,
+                      noticePeriodDays: startReadiness === 'notice_period' ? formData.noticePeriodDays : undefined,
+                      targetStartDate: startReadiness === 'tanggal' ? formData.targetStartDate : undefined,
+                    });
+                  }}
                   className="w-full p-2.5 rounded-lg border border-[#D9D9D9] text-[#242424] bg-white focus:outline-hidden focus:border-[#BD214C]"
                 >
                   <option value="segera">Segera (Immediate)</option>
                   <option value="notice_period">Perlu Notice Period</option>
+                  <option value="tanggal">Mulai di Tanggal Tertentu</option>
                   <option value="diskusi">Perlu Diskusi Lebih Lanjut</option>
                 </select>
               </div>
+
+              {formData.startReadiness === 'notice_period' && (
+                <div>
+                  <label htmlFor="notice-period-input" className="block font-bold text-[#242424] mb-1">
+                    Lama Notice Period (hari)
+                  </label>
+                  <input
+                    id="notice-period-input"
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={365}
+                    placeholder="Contoh: 30"
+                    value={formData.noticePeriodDays ?? ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        noticePeriodDays: e.target.value === '' ? undefined : Math.min(365, Math.max(0, Math.trunc(Number(e.target.value)))),
+                      })
+                    }
+                    className="w-full p-2.5 rounded-lg border border-[#D9D9D9] text-[#242424] focus:outline-hidden focus:border-[#BD214C]"
+                  />
+                </div>
+              )}
+
+              {formData.startReadiness === 'tanggal' && (
+                <div>
+                  <label htmlFor="target-start-date-input" className="block font-bold text-[#242424] mb-1">
+                    Tanggal Mulai yang Diinginkan
+                  </label>
+                  <input
+                    id="target-start-date-input"
+                    type="date"
+                    value={formData.targetStartDate ?? ''}
+                    onChange={(e) => setFormData({ ...formData, targetStartDate: e.target.value || undefined })}
+                    className="w-full p-2.5 rounded-lg border border-[#D9D9D9] text-[#242424] focus:outline-hidden focus:border-[#BD214C]"
+                  />
+                </div>
+              )}
 
               <div>
                 <label htmlFor="experience-band-select" className="block font-bold text-[#242424] mb-1">Pengalaman Relevan yang Dilaporkan</label>
@@ -481,7 +585,7 @@ export const ProfileAndCV: React.FC = () => {
             {/* Target Role & Preferensi */}
             <div className="space-y-4 pt-2 border-t border-[#F7F7F7] text-xs">
               <div>
-                <label htmlFor="target-role-input" className="block font-bold text-[#242424] mb-1">Target Posisi / Role</label>
+                <label htmlFor="target-role-input" className="block font-bold text-[#242424] mb-1">Target Posisi / Role <span className="text-[#BD214C]">*</span></label>
                 <div className="flex gap-2">
                   <input
                     id="target-role-input"
@@ -510,6 +614,7 @@ export const ProfileAndCV: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleRemoveRole(r)}
+                        aria-label={`Hapus target posisi ${r}`}
                         className="text-[#595959] hover:text-rose-600 font-bold"
                       >
                         ×
@@ -519,10 +624,45 @@ export const ProfileAndCV: React.FC = () => {
                 </div>
               </div>
 
+              {/* Work Types */}
+              <div>
+                <span id="work-types-label" className="block font-bold text-[#242424] mb-1">
+                  Jenis Pekerjaan <span className="text-[#BD214C]">*</span>
+                </span>
+                <div role="group" aria-labelledby="work-types-label" className="flex flex-wrap gap-2">
+                  {(
+                    [
+                      ['full_time', 'Full Time'],
+                      ['contract', 'Kontrak'],
+                      ['internship', 'Magang'],
+                      ['freelance', 'Freelance'],
+                      ['part_time', 'Part Time'],
+                    ] as [WorkType, string][]
+                  ).map(([type, label]) => {
+                    const active = formData.targetWorkTypes.includes(type);
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => toggleWorkType(type)}
+                        aria-pressed={active}
+                        className={`px-3 py-1.5 rounded-lg border text-xs font-semibold ${
+                          active
+                            ? 'bg-[#BD214C] text-white border-[#BD214C]'
+                            : 'bg-white text-[#595959] border-[#D9D9D9]'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Work Models */}
               <div>
-                <label className="block font-bold text-[#242424] mb-1">Model Kerja yang Dipertimbangkan</label>
-                <div className="flex flex-wrap gap-2">
+                <span id="work-models-label" className="block font-bold text-[#242424] mb-1">Model Kerja yang Dipertimbangkan <span className="text-[#BD214C]">*</span></span>
+                <div role="group" aria-labelledby="work-models-label" className="flex flex-wrap gap-2">
                   {(['wfo', 'hybrid', 'remote'] as WorkModel[]).map((m) => {
                     const active = formData.targetWorkModels.includes(m);
                     return (
@@ -530,6 +670,7 @@ export const ProfileAndCV: React.FC = () => {
                         key={m}
                         type="button"
                         onClick={() => toggleWorkModel(m)}
+                        aria-pressed={active}
                         className={`px-3 py-1.5 rounded-lg border text-xs font-semibold uppercase ${
                           active
                             ? 'bg-[#BD214C] text-white border-[#BD214C]'
@@ -569,6 +710,63 @@ export const ProfileAndCV: React.FC = () => {
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="portfolio-url-input" className="block font-bold text-[#242424] mb-1">Tautan Portofolio (Opsional)</label>
+                  <input
+                    id="portfolio-url-input"
+                    type="url"
+                    placeholder="https://..."
+                    value={formData.portfolioUrl || ''}
+                    onChange={(e) => setFormData({ ...formData, portfolioUrl: e.target.value })}
+                    className="w-full p-2.5 rounded-lg border border-[#D9D9D9] text-[#242424] focus:outline-hidden focus:border-[#BD214C]"
+                  />
+                </div>
+              </div>
+
+              {/* Target locations */}
+              <div>
+                <label htmlFor="target-location-input" className="block font-bold text-[#242424] mb-1">
+                  Lokasi Kerja yang Dipertimbangkan (Opsional)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="target-location-input"
+                    type="text"
+                    placeholder="Contoh: Jakarta"
+                    value={locationInput}
+                    onChange={(e) => setLocationInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddLocation())}
+                    className="flex-1 p-2.5 rounded-lg border border-[#D9D9D9] text-[#242424] focus:outline-hidden focus:border-[#BD214C]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddLocation}
+                    className="px-4 py-2 bg-[#BD214C] text-white rounded-lg font-bold"
+                  >
+                    Tambah
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {formData.targetLocations.map((loc) => (
+                    <span
+                      key={loc}
+                      className="px-2.5 py-1 rounded-md bg-[#F9EDDE] border border-[#EADBCE] text-[#242424] font-medium flex items-center gap-1.5"
+                    >
+                      {loc}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveLocation(loc)}
+                        aria-label={`Hapus lokasi ${loc}`}
+                        className="text-[#595959] hover:text-rose-600 font-bold"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
               {/* Proactive Contact Toggle (FR07) */}
               <div className="p-3.5 rounded-xl border border-[#D9D9D9] bg-[#F7F7F7]">
                 <label className="flex items-start gap-3 cursor-pointer">
@@ -580,7 +778,7 @@ export const ProfileAndCV: React.FC = () => {
                   />
                   <div className="text-xs">
                     <span className="font-bold text-[#242424] block">
-                      Izinkan Penawaran Peluang Proaktif dari Tim BolBel (FR07)
+                      Izinkan Rekomendasi Peluang Proaktif dari Tim BolBel
                     </span>
                     <span className="text-[#595959] block mt-0.5">
                       Jika aktif, Gifari dapat merekomendasikan profilmu ke lowongan yang relevan. Setiap rekomendasi

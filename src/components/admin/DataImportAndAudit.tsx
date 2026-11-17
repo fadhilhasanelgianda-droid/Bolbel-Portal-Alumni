@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import {
   UploadCloud,
@@ -11,8 +13,10 @@ import {
   FileText,
 } from 'lucide-react';
 import { useDataStore } from '../../domain/dataStore.tsx';
+import { shortRef } from '../../domain/labels.ts';
 import { parseAndValidateRosterCsv, formatDateIndo } from '../../domain/stateMachine.ts';
-import type { CsvRosterImportRow } from '../../domain/types.ts';
+import type { CsvRosterImportRow, EligibilityStatus } from '../../domain/types.ts';
+import { RosterManager } from './RosterManager.tsx';
 
 const SAMPLE_CSV = `Email,Nama Lengkap,Program,Batch,Eligibility
 hendra.wijaya@alumni.com,Hendra Wijaya,Full Course,Batch 12,eligible
@@ -23,12 +27,10 @@ invalid-email-address,Kurnia Pratama,Career Prep,Batch 10,pending`;
 export const DataImportAndAudit: React.FC = () => {
   const { roster, consents, importRosterBatch } = useDataStore();
 
-  const [activeTab, setActiveTab] = useState<'import' | 'audit'>('import');
-  const [csvText, setCsvText] = useState(SAMPLE_CSV);
-  const [parsedRows, setParsedRows] = useState<CsvRosterImportRow[]>(() => {
-    const existingEmails = roster.map((r) => r.email);
-    return parseAndValidateRosterCsv(SAMPLE_CSV, existingEmails);
-  });
+  const [activeTab, setActiveTab] = useState<'roster' | 'import' | 'audit'>('roster');
+  // Starts empty on purpose: the sample rows are fake and must never be committable by accident
+  const [csvText, setCsvText] = useState('');
+  const [parsedRows, setParsedRows] = useState<CsvRosterImportRow[]>([]);
   const [importSuccessMsg, setImportSuccessMsg] = useState<string | null>(null);
 
   const handleParseCsv = () => {
@@ -38,21 +40,26 @@ export const DataImportAndAudit: React.FC = () => {
     setImportSuccessMsg(null);
   };
 
-  const handleCommitImport = () => {
+  const handleCommitImport = async () => {
     const validRows = parsedRows.filter((r) => r.isValid && !r.isDuplicate);
     if (validRows.length === 0) return;
+    if (!window.confirm(`Impor ${validRows.length} alumni ke roster? Mereka akan bisa mengaktifkan akun lewat email masing-masing.`)) return;
 
-    const count = importRosterBatch(
+    const count = await importRosterBatch(
       validRows.map((r) => ({
         email: r.email,
         fullName: r.fullName,
-        program: r.program as any,
+        program: r.program,
         batch: r.batch,
-        eligibility: r.eligibility as any,
+        eligibility: r.eligibility as EligibilityStatus,
       }))
     );
 
-    setImportSuccessMsg(`Berhasil mengimpor ${count} alumni baru ke dalam roster terverifikasi.`);
+    setImportSuccessMsg(
+      count > 0
+        ? `Berhasil mengimpor ${count} alumni baru ke dalam roster terverifikasi.`
+        : 'Tidak ada alumni baru yang ditambahkan (semua sudah terdaftar, atau terjadi kesalahan).'
+    );
     // Re-validate against new roster
     setTimeout(() => {
       handleParseCsv();
@@ -75,17 +82,29 @@ export const DataImportAndAudit: React.FC = () => {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-[#242424] tracking-tight">
-          Impor Roster Awal &amp; Audit Privasi Data
+          Roster Alumni &amp; Audit Privasi Data
         </h1>
         <p className="text-xs sm:text-sm text-[#595959] mt-0.5">
-          Kelola integritas identitas alumni (FR10) serta penegakan persetujuan pembagian data (FR12).
+          Kelola daftar alumni yang berhak memakai portal, dan pantau persetujuan pembagian data.
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-[#D9D9D9] pb-2 text-xs">
+      <div className="flex flex-wrap gap-2 border-b border-[#D9D9D9] pb-2 text-xs">
+        <button
+          onClick={() => setActiveTab('roster')}
+          aria-pressed={activeTab === 'roster'}
+          className={`px-4 py-2 rounded-lg font-bold transition-all ${
+            activeTab === 'roster'
+              ? 'bg-[#BD214C] text-white'
+              : 'text-[#595959] hover:bg-[#F7F7F7]'
+          }`}
+        >
+          Daftar Roster ({roster.length})
+        </button>
         <button
           onClick={() => setActiveTab('import')}
+          aria-pressed={activeTab === 'import'}
           className={`px-4 py-2 rounded-lg font-bold transition-all ${
             activeTab === 'import'
               ? 'bg-[#BD214C] text-white'
@@ -102,12 +121,14 @@ export const DataImportAndAudit: React.FC = () => {
               : 'text-[#595959] hover:bg-[#F7F7F7]'
           }`}
         >
-          Log Persetujuan (Consent Audit)
+          Log Persetujuan (Audit)
         </button>
       </div>
 
-      {activeTab === 'import' ? (
-        /* Impor CSV Tab (FR10) */
+      {activeTab === 'roster' ? (
+        <RosterManager />
+      ) : activeTab === 'import' ? (
+        /* Impor CSV Tab */
         <div className="space-y-6">
           <div className="bg-white rounded-xl border border-[#D9D9D9] p-5 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -134,6 +155,7 @@ export const DataImportAndAudit: React.FC = () => {
                 id="csv-input-area"
                 rows={5}
                 value={csvText}
+                placeholder={'Tempel data CSV di sini, atau unduh template untuk melihat formatnya.\nEmail,Nama Lengkap,Program,Batch,Eligibility'}
                 onChange={(e) => setCsvText(e.target.value)}
                 className="w-full font-mono text-xs p-3 rounded-lg border border-[#D9D9D9] text-[#242424] focus:outline-hidden focus:border-[#BD214C]"
               />
@@ -162,7 +184,7 @@ export const DataImportAndAudit: React.FC = () => {
                 <h4 className="text-xs font-bold uppercase tracking-wider text-[#595959]">
                   Hasil Validasi Impor ({parsedRows.length} Baris Terdeteksi)
                 </h4>
-                <div className="text-[11px] text-[#595959]">
+                <div className="text-xs text-[#595959]">
                   Valid: {parsedRows.filter((r) => r.isValid && !r.isDuplicate).length} baris • Bermasalah/Duplikat:{' '}
                   {parsedRows.filter((r) => !r.isValid || r.isDuplicate).length} baris
                 </div>
@@ -205,20 +227,20 @@ export const DataImportAndAudit: React.FC = () => {
                       </td>
                       <td className="px-4 py-2.5">
                         {row.isValid && !row.isDuplicate ? (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                          <span className="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800">
                             Siap Diimpor
                           </span>
                         ) : row.isDuplicate ? (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
+                          <span className="px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800">
                             Duplikat Terdaftar
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">
+                          <span className="px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-800">
                             Tidak Valid
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-2.5 text-[11px] text-rose-700">
+                      <td className="px-4 py-2.5 text-xs text-rose-700">
                         {row.errors.length > 0 ? row.errors.join('; ') : '-'}
                       </td>
                     </tr>
@@ -229,13 +251,13 @@ export const DataImportAndAudit: React.FC = () => {
           </div>
         </div>
       ) : (
-        /* Consent Audit Log Tab (FR12) */
+        /* Consent Audit Log Tab */
         <div className="bg-white rounded-xl border border-[#D9D9D9] overflow-hidden shadow-xs">
           <div className="p-4 border-b border-[#D9D9D9] bg-[#F7F7F7]">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#595959]">
-              Daftar Riwayat Persetujuan Pembagian CV &amp; Profil (FR12)
+              Daftar Riwayat Persetujuan Pembagian CV &amp; Profil
             </h4>
-            <p className="text-[11px] text-[#595959] mt-0.5">
+            <p className="text-xs text-[#595959] mt-0.5">
               Setiap lamaran mencatat persetujuan aktif spesifik per lowongan. Penarikan izin dicatat tanpa menghapus
               bukti legalitas riwayat.
             </p>
@@ -245,7 +267,7 @@ export const DataImportAndAudit: React.FC = () => {
             <table className="w-full text-left text-xs text-[#242424]">
               <thead className="bg-[#F7F7F7] border-b border-[#D9D9D9] text-[#595959] uppercase tracking-wider font-semibold">
                 <tr>
-                  <th className="px-4 py-3">ID Consent</th>
+                  <th className="px-4 py-3">Kode Persetujuan</th>
                   <th className="px-4 py-3">Lowongan &amp; Company</th>
                   <th className="px-4 py-3">Dokumen CV Terkunci</th>
                   <th className="px-4 py-3">Versi Kebijakan</th>
@@ -257,31 +279,31 @@ export const DataImportAndAudit: React.FC = () => {
                 {consents.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-4 py-6 text-center text-[#595959] italic">
-                      Belum ada consent tercatat.
+                      Belum ada persetujuan tercatat.
                     </td>
                   </tr>
                 ) : (
                   consents.map((c) => (
                     <tr key={c.id} className="hover:bg-[#F9EDDE]/20 transition-colors">
-                      <td className="px-4 py-3 font-mono text-[11px]">{c.id}</td>
+                      <td className="px-4 py-3 font-mono text-xs" title={c.id}>{shortRef(c.id)}</td>
                       <td className="px-4 py-3 font-medium">
                         {c.jobTitle} <span className="text-[#595959]">({c.companyName})</span>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-1.5 text-[11px]">
+                        <div className="flex items-center gap-1.5 text-xs">
                           <FileText className="w-3.5 h-3.5 text-[#BD214C]" />
                           <span>{c.documentName}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-[#595959] font-mono text-[11px]">{c.policyVersion}</td>
-                      <td className="px-4 py-3 text-[#595959] text-[11px]">{formatDateIndo(c.grantedAt)}</td>
+                      <td className="px-4 py-3 text-[#595959] font-mono text-xs">{c.policyVersion}</td>
+                      <td className="px-4 py-3 text-[#595959] text-xs">{formatDateIndo(c.grantedAt)}</td>
                       <td className="px-4 py-3">
                         {c.revokedAt ? (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">
+                          <span className="px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-800">
                             Dicabut pada {formatDateIndo(c.revokedAt)}
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                          <span className="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800">
                             Aktif Valid
                           </span>
                         )}

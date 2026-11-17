@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import {
   X,
@@ -14,6 +16,8 @@ import {
 import type { Job } from '../../domain/types.ts';
 import { formatCurrencyIDR, formatDateIndo, STAGE_CONFIG } from '../../domain/stateMachine.ts';
 import { useDataStore } from '../../domain/dataStore.tsx';
+import { WORK_MODEL_LABEL, WORK_TYPE_LABEL } from '../../domain/labels.ts';
+import { Modal } from '../Modal.tsx';
 
 interface JobDetailModalProps {
   job: Job;
@@ -33,7 +37,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
   const isPaused = job.status === 'paused';
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+    <Modal onClose={onClose} label="Detail lowongan" closeOnBackdrop>
       <div className="relative bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-xl max-h-[90vh] overflow-y-auto">
         {/* Close Button */}
         <button
@@ -76,13 +80,13 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
           <div>
             <span className="text-[#595959] block">Lokasi & Model:</span>
             <span className="font-semibold text-[#242424] block mt-0.5">
-              {job.location} ({job.workModel.toUpperCase()})
+              {job.location} ({WORK_MODEL_LABEL[job.workModel]})
             </span>
           </div>
           <div>
             <span className="text-[#595959] block">Tipe Kontrak:</span>
             <span className="font-semibold text-[#242424] block mt-0.5">
-              {job.workType.replace('_', ' ')}
+              {WORK_TYPE_LABEL[job.workType]}
             </span>
           </div>
           <div>
@@ -177,7 +181,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
             <div className="w-full sm:w-auto flex items-center gap-2">
               <button
                 onClick={onReportExternal}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-lg border border-[#D9D9D9] hover:border-[#BD214C] text-[#242424] text-xs font-semibold"
+                className="w-full sm:w-auto px-2 py-2.5 text-[#595959] hover:text-[#BD214C] hover:underline text-xs font-semibold"
               >
                 Sudah Melamar di Situs Company?
               </button>
@@ -187,12 +191,12 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                 rel="noreferrer"
                 className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-[#BD214C] hover:bg-[#a61b42] text-white text-sm font-bold flex items-center justify-center gap-1.5"
               >
-                Buka Link Apply <ExternalLink className="w-4 h-4" />
+                Buka Halaman Lamaran <ExternalLink className="w-4 h-4" />
               </a>
             </div>
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };

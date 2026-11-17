@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useMemo } from 'react';
 import {
   Search,
@@ -16,11 +18,15 @@ import {
 import { useDataStore } from '../../domain/dataStore.tsx';
 import type { Job, WorkModel, WorkType, ApplyChannel } from '../../domain/types.ts';
 import { formatCurrencyIDR, formatDateIndo, STAGE_CONFIG } from '../../domain/stateMachine.ts';
+import { WORK_MODEL_LABEL, WORK_TYPE_LABEL, EXPERIENCE_LEVEL_LABEL } from '../../domain/labels.ts';
 import { JobDetailModal } from './JobDetailModal.tsx';
 import { ApplyBolBelModal } from './ApplyBolBelModal.tsx';
 import { ReportExternalApplyModal } from './ReportExternalApplyModal.tsx';
 
-export const JobList: React.FC = () => {
+export const JobList: React.FC<{ onGoToProfile?: () => void; onGoToApplications?: () => void }> = ({
+  onGoToProfile,
+  onGoToApplications,
+}) => {
   const { jobs, processes, currentUser } = useDataStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedModel, setSelectedModel] = useState<string>('all');
@@ -97,7 +103,7 @@ export const JobList: React.FC = () => {
             />
           </div>
 
-          <div className="flex flex-wrap sm:flex-nowrap gap-2 items-center">
+          <div className="grid grid-cols-1 sm:flex sm:flex-nowrap gap-2 sm:items-center">
             {/* Cara Kerja Filter */}
             <select
               value={selectedModel}
@@ -122,6 +128,8 @@ export const JobList: React.FC = () => {
               <option value="full_time">Full-time</option>
               <option value="contract">Kontrak</option>
               <option value="internship">Magang</option>
+              <option value="freelance">Freelance</option>
+              <option value="part_time">Part-time</option>
             </select>
 
             {/* Jalur Apply Filter */}
@@ -129,11 +137,11 @@ export const JobList: React.FC = () => {
               value={selectedChannel}
               onChange={(e) => setSelectedChannel(e.target.value)}
               className="px-3 py-2.5 rounded-lg border border-[#D9D9D9] text-sm text-[#242424] bg-white focus:outline-hidden focus:border-[#BD214C]"
-              aria-label="Filter jalur apply"
+              aria-label="Filter jalur lamaran"
             >
-              <option value="all">Semua Jalur Apply</option>
+              <option value="all">Semua Jalur Lamaran</option>
               <option value="bolbel">Melalui BolBel</option>
-              <option value="external">Apply Eksternal</option>
+              <option value="external">Lamar di Situs Company</option>
             </select>
 
             {(searchQuery || selectedModel !== 'all' || selectedType !== 'all' || selectedChannel !== 'all') && (
@@ -196,17 +204,17 @@ export const JobList: React.FC = () => {
                     >
                       {job.applyChannel === 'bolbel' ? (
                         <>
-                          <FileCheck className="w-3.5 h-3.5" /> Apply Melalui BolBel
+                          <FileCheck className="w-3.5 h-3.5" /> Lamar Lewat BolBel
                         </>
                       ) : (
                         <>
-                          <ExternalLink className="w-3.5 h-3.5" /> Apply Eksternal
+                          <ExternalLink className="w-3.5 h-3.5" /> Lamar di Situs Company
                         </>
                       )}
                     </span>
 
                     {isPaused && (
-                      <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                      <span className="px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
                         Pendaftaran Dijeda
                       </span>
                     )}
@@ -231,13 +239,13 @@ export const JobList: React.FC = () => {
                   {/* Job Tags */}
                   <div className="flex flex-wrap gap-2 mt-3 text-xs text-[#595959]">
                     <span className="px-2 py-1 rounded-md bg-[#F7F7F7] border border-[#D9D9D9] flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-[#595959]" /> {job.location} ({job.workModel.toUpperCase()})
+                      <MapPin className="w-3 h-3 text-[#595959]" /> {job.location} ({WORK_MODEL_LABEL[job.workModel]})
                     </span>
                     <span className="px-2 py-1 rounded-md bg-[#F7F7F7] border border-[#D9D9D9] flex items-center gap-1">
-                      <Briefcase className="w-3 h-3 text-[#595959]" /> {job.workType.replace('_', ' ')}
+                      <Briefcase className="w-3 h-3 text-[#595959]" /> {WORK_TYPE_LABEL[job.workType]}
                     </span>
                     <span className="px-2 py-1 rounded-md bg-[#F7F7F7] border border-[#D9D9D9]">
-                      Level: {job.experienceLevel}
+                      Level: {EXPERIENCE_LEVEL_LABEL[job.experienceLevel]}
                     </span>
                   </div>
 
@@ -284,7 +292,7 @@ export const JobList: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setActiveJobForReportExternal(job)}
-                        className="px-3 py-1.5 rounded-lg border border-[#D9D9D9] hover:border-[#BD214C] text-[#242424] text-xs font-semibold transition-colors"
+                        className="px-1 py-1.5 text-[#595959] hover:text-[#BD214C] hover:underline text-xs font-semibold transition-colors"
                         title="Catat jika sudah melamar di website company"
                       >
                         Sudah Melamar?
@@ -328,6 +336,15 @@ export const JobList: React.FC = () => {
         <ApplyBolBelModal
           job={activeJobForApplyBolBel}
           onClose={() => setActiveJobForApplyBolBel(null)}
+          onGoToApplications={onGoToApplications}
+          onGoToProfile={
+            onGoToProfile
+              ? () => {
+                  setActiveJobForApplyBolBel(null);
+                  onGoToProfile();
+                }
+              : undefined
+          }
         />
       )}
 
@@ -335,6 +352,7 @@ export const JobList: React.FC = () => {
         <ReportExternalApplyModal
           job={activeJobForReportExternal}
           onClose={() => setActiveJobForReportExternal(null)}
+          onGoToApplications={onGoToApplications}
         />
       )}
     </div>

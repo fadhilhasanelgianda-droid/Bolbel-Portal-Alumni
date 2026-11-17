@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useMemo } from 'react';
 import {
   Search,
@@ -18,6 +20,9 @@ import {
 import { useDataStore } from '../../domain/dataStore.tsx';
 import type { AlumniProfile, OpennessStatus, ExperienceBand, WorkModel } from '../../domain/types.ts';
 import { isProfileFresh, formatDateIndo, STAGE_CONFIG } from '../../domain/stateMachine.ts';
+import { Modal } from '../Modal.tsx';
+import { cvDownloadUrl } from '../../client/api.ts';
+import { EXPERIENCE_BAND_LABEL, describeReadiness } from '../../domain/labels.ts';
 
 export const CandidateSearch: React.FC = () => {
   const { profiles, cvs, jobs, processes, createProactiveProposal } = useDataStore();
@@ -78,7 +83,7 @@ export const CandidateSearch: React.FC = () => {
       const res = await createProactiveProposal(proposingCandidate.userId, selectedJobId);
       if (res.success) {
         setProposalSuccess(
-          `Pengajuan berhasil dikirimkan ke akun ${proposingCandidate.fullName}. Status sekarang "Menunggu Persetujuan Alumni".`
+          `Rekomendasi berhasil dikirimkan ke akun ${proposingCandidate.fullName}. Status sekarang "Menunggu Persetujuan Alumni".`
         );
         setTimeout(() => {
           setProposingCandidate(null);
@@ -86,7 +91,7 @@ export const CandidateSearch: React.FC = () => {
           setProposalSuccess(null);
         }, 2500);
       } else {
-        setProposalError(res.error || 'Gagal membuat pengajuan.');
+        setProposalError(res.error || 'Gagal membuat rekomendasi.');
       }
     } catch {
       setProposalError('Terjadi kesalahan saat memproses rekomendasi.');
@@ -100,10 +105,10 @@ export const CandidateSearch: React.FC = () => {
       {/* Intro Header */}
       <div>
         <h1 className="text-2xl font-bold text-[#242424] tracking-tight">
-          Pencarian Kandidat &amp; Talent Pool Alumni
+          Pencarian Kandidat Alumni
         </h1>
         <p className="text-xs sm:text-sm text-[#595959] mt-0.5">
-          Filter data terstruktur profil alumni berdasarkan ketersediaan, domisili, dan preferensi role. Pengajuan
+          Filter data terstruktur profil alumni berdasarkan ketersediaan, domisili, dan preferensi role. Setiap
           rekomendasi ke partner company selalu memerlukan persetujuan alumni.
         </p>
       </div>
@@ -202,8 +207,8 @@ export const CandidateSearch: React.FC = () => {
                     <tr key={candidate.userId} className="hover:bg-[#F9EDDE]/30 transition-colors">
                       <td className="px-4 py-3.5">
                         <div className="font-bold text-[#242424]">{candidate.fullName}</div>
-                        <div className="text-[11px] text-[#595959]">{candidate.email}</div>
-                        <div className="text-[10px] text-[#BD214C] font-semibold mt-0.5">
+                        <div className="text-xs text-[#595959]">{candidate.email}</div>
+                        <div className="text-xs text-[#BD214C] font-semibold mt-0.5">
                           {candidate.program} ({candidate.batch})
                         </div>
                       </td>
@@ -213,18 +218,18 @@ export const CandidateSearch: React.FC = () => {
                           {candidate.targetRoles.map((r) => (
                             <span
                               key={r}
-                              className="px-1.5 py-0.5 rounded bg-[#F7F7F7] border border-[#D9D9D9] text-[10px] text-[#242424]"
+                              className="px-1.5 py-0.5 rounded bg-[#F7F7F7] border border-[#D9D9D9] text-xs text-[#242424]"
                             >
                               {r}
                             </span>
                           ))}
                         </div>
-                        <div className="text-[11px] text-[#595959] mt-1">Domisili: {candidate.domicile}</div>
+                        <div className="text-xs text-[#595959] mt-1">Domisili: {candidate.domicile}</div>
                       </td>
 
                       <td className="px-4 py-3.5">
                         <span
-                          className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                          className={`inline-block px-2 py-0.5 rounded text-xs font-bold uppercase ${
                             candidate.opennessStatus === 'aktif_mencari'
                               ? 'bg-emerald-100 text-emerald-800'
                               : candidate.opennessStatus === 'terbuka'
@@ -234,14 +239,14 @@ export const CandidateSearch: React.FC = () => {
                         >
                           {candidate.opennessStatus.replace('_', ' ')}
                         </span>
-                        <div className="text-[11px] text-[#595959] mt-1 capitalize">
+                        <div className="text-xs text-[#595959] mt-1 capitalize">
                           {candidate.employmentStatus.replace('_', ' ')}
                         </div>
                       </td>
 
                       <td className="px-4 py-3.5">
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold ${
                             freshness.isFresh
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : 'bg-amber-100 text-amber-900 border border-amber-300'
@@ -249,28 +254,28 @@ export const CandidateSearch: React.FC = () => {
                         >
                           {freshness.isFresh ? 'Segar' : `Perlu Konfirmasi (${freshness.daysAgo} hari)`}
                         </span>
-                        <div className="text-[10px] text-[#595959] mt-0.5">
+                        <div className="text-xs text-[#595959] mt-0.5">
                           {formatDateIndo(candidate.availabilityConfirmedAt)}
                         </div>
                       </td>
 
                       <td className="px-4 py-3.5">
                         {activeCv ? (
-                          <div className="flex items-center gap-1.5 text-[11px] text-[#242424]">
+                          <div className="flex items-center gap-1.5 text-xs text-[#242424]">
                             <FileText className="w-3.5 h-3.5 text-[#BD214C]" />
                             <span className="truncate max-w-[120px]" title={activeCv.fileName}>
                               {activeCv.fileName}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-[11px] text-rose-600 italic">Belum Ada CV</span>
+                          <span className="text-xs text-rose-600 italic">Belum Ada CV</span>
                         )}
                       </td>
 
                       <td className="px-4 py-3.5 text-right space-x-1.5 whitespace-nowrap">
                         <button
                           onClick={() => setSelectedCandidate(candidate)}
-                          className="px-2.5 py-1 rounded border border-[#D9D9D9] hover:border-[#BD214C] text-[11px] font-semibold text-[#242424]"
+                          className="px-2.5 py-1 rounded border border-[#D9D9D9] hover:border-[#BD214C] text-xs font-semibold text-[#242424]"
                         >
                           Detail
                         </button>
@@ -280,9 +285,9 @@ export const CandidateSearch: React.FC = () => {
                             setSelectedJobId('');
                             setProposalError(null);
                           }}
-                          className="px-2.5 py-1 rounded bg-[#BD214C] hover:bg-[#a61b42] text-white text-[11px] font-bold transition-all shadow-xs"
+                          className="px-2.5 py-1 rounded bg-[#BD214C] hover:bg-[#a61b42] text-white text-xs font-bold transition-all shadow-xs"
                         >
-                          Ajukan Rekomendasi
+                          Rekomendasikan ke Lowongan
                         </button>
                       </td>
                     </tr>
@@ -296,7 +301,7 @@ export const CandidateSearch: React.FC = () => {
 
       {/* Candidate Detail Drawer */}
       {selectedCandidate && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-end">
+        <Modal onClose={() => setSelectedCandidate(null)} label="Detail kandidat" align="end" closeOnBackdrop>
           <div className="relative bg-white w-full max-w-lg h-full min-h-screen p-6 shadow-2xl overflow-y-auto space-y-5">
             <button
               onClick={() => setSelectedCandidate(null)}
@@ -330,22 +335,39 @@ export const CandidateSearch: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-[#595959] block">Kesiapan Mulai:</span>
-                  <span className="font-semibold text-[#242424] capitalize">
-                    {selectedCandidate.startReadiness.replace('_', ' ')}
-                  </span>
+                  <span className="font-semibold text-[#242424]">{describeReadiness(selectedCandidate)}</span>
                 </div>
                 <div>
                   <span className="text-[#595959] block">Pengalaman:</span>
-                  <span className="font-semibold text-[#242424]">{selectedCandidate.experienceBand}</span>
+                  <span className="font-semibold text-[#242424]">{EXPERIENCE_BAND_LABEL[selectedCandidate.experienceBand]}</span>
                 </div>
+                {selectedCandidate.targetLocations.length > 0 && (
+                  <div className="col-span-2">
+                    <span className="text-[#595959] block">Lokasi yang Dipertimbangkan:</span>
+                    <span className="font-semibold text-[#242424]">{selectedCandidate.targetLocations.join(', ')}</span>
+                  </div>
+                )}
+                {selectedCandidate.portfolioUrl && (
+                  <div className="col-span-2">
+                    <span className="text-[#595959] block">Portofolio:</span>
+                    <a
+                      href={selectedCandidate.portfolioUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-[#BD214C] underline break-all"
+                    >
+                      {selectedCandidate.portfolioUrl}
+                    </a>
+                  </div>
+                )}
                 <div>
-                  <span className="text-[#595959] block">Penawaran Proaktif:</span>
+                  <span className="text-[#595959] block">Rekomendasi Proaktif:</span>
                   <span
                     className={`font-semibold ${
                       selectedCandidate.allowProactiveContact ? 'text-emerald-700' : 'text-rose-600'
                     }`}
                   >
-                    {selectedCandidate.allowProactiveContact ? 'Diizinkan' : 'Ditolak (Apply Mandiri Saja)'}
+                    {selectedCandidate.allowProactiveContact ? 'Diizinkan' : 'Ditolak (Lamar Mandiri Saja)'}
                   </span>
                 </div>
               </div>
@@ -365,21 +387,18 @@ export const CandidateSearch: React.FC = () => {
                       <FileText className="w-4 h-4 text-[#BD214C]" />
                       <div>
                         <div className="font-bold text-[#242424]">{activeCv.fileName}</div>
-                        <div className="text-[11px] text-[#595959]">
+                        <div className="text-xs text-[#595959]">
                           {(activeCv.fileSizeBytes / 1024 / 1024).toFixed(2)} MB • {formatDateIndo(activeCv.uploadedAt)}
                         </div>
                       </div>
                     </div>
-                    <button
-                      onClick={() =>
-                        alert(
-                          `Akses URL privat untuk ${activeCv.fileName} (Dihasilkan oleh API, kedaluwarsa setelah 5 menit)`
-                        )
-                      }
-                      className="px-3 py-1.5 rounded bg-white border border-[#D9D9D9] hover:border-[#BD214C] text-[11px] font-bold text-[#BD214C] flex items-center gap-1"
+                    <a
+                      href={cvDownloadUrl(activeCv.id)}
+                      download
+                      className="px-3 py-1.5 rounded bg-white border border-[#D9D9D9] hover:border-[#BD214C] text-xs font-bold text-[#BD214C] flex items-center gap-1"
                     >
-                      <Download className="w-3.5 h-3.5" /> Unduh (5 min TTL)
-                    </button>
+                      <Download className="w-3.5 h-3.5" /> Unduh CV
+                    </a>
                   </div>
                 );
               })()}
@@ -401,7 +420,7 @@ export const CandidateSearch: React.FC = () => {
                       <div key={p.id} className="p-2.5 rounded-lg border border-[#D9D9D9] text-xs">
                         <div className="font-bold text-[#242424]">{p.jobTitle}</div>
                         <div className="text-[#595959]">{p.companyName}</div>
-                        <div className="text-[11px] text-[#BD214C] font-semibold mt-1">
+                        <div className="text-xs text-[#BD214C] font-semibold mt-1">
                           Tahap: {STAGE_CONFIG[p.currentStage]?.label} • Status: {p.outcome}
                         </div>
                       </div>
@@ -411,12 +430,12 @@ export const CandidateSearch: React.FC = () => {
               })()}
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Proactive Proposal Modal (FR07) */}
       {proposingCandidate && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+        <Modal onClose={() => setProposingCandidate(null)} label="Rekomendasi peluang proaktif">
           <div className="relative bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
             <button
               onClick={() => setProposingCandidate(null)}
@@ -428,7 +447,7 @@ export const CandidateSearch: React.FC = () => {
 
             <div>
               <span className="text-xs font-bold text-[#BD214C] uppercase tracking-wider">
-                Pengajuan Peluang Proaktif (FR07)
+                Rekomendasi Peluang Proaktif
               </span>
               <h3 className="text-lg font-bold text-[#242424] mt-0.5">
                 Rekomendasikan {proposingCandidate.fullName}
@@ -456,9 +475,9 @@ export const CandidateSearch: React.FC = () => {
 
             {!proposingCandidate.allowProactiveContact ? (
               <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 space-y-1">
-                <strong className="block font-bold">Izin Kontak Tidak Aktif (PRD FR07)</strong>
+                <strong className="block font-bold">Izin Kontak Tidak Aktif</strong>
                 <p>
-                  Alumni ini tidak mengaktifkan izin penawaran proaktif. Sistem memblokir pengajuan admin dan hanya
+                  Alumni ini tidak mengaktifkan izin rekomendasi proaktif. Sistem memblokir rekomendasi admin dan hanya
                   mengizinkan alumni untuk melamar mandiri melalui daftar lowongan.
                 </p>
               </div>
@@ -485,9 +504,9 @@ export const CandidateSearch: React.FC = () => {
                 </div>
 
                 <div className="p-3 rounded-lg bg-[#F9EDDE] border border-[#EADBCE] text-xs text-[#595959] space-y-1">
-                  <div className="font-bold text-[#242424]">Aturan Persetujuan (Consent)</div>
+                  <div className="font-bold text-[#242424]">Aturan Persetujuan</div>
                   <p>
-                    Pengajuan ini akan masuk ke tab &quot;Lamaran Saya&quot; alumni dengan status{' '}
+                    Rekomendasi ini akan masuk ke tab &quot;Lamaran Saya&quot; alumni dengan status{' '}
                     <strong className="text-[#242424]">&quot;Menunggu Persetujuan&quot;</strong>. Gifari belum boleh
                     meneruskan CV sampai alumni klik Setujui.
                   </p>
@@ -507,13 +526,13 @@ export const CandidateSearch: React.FC = () => {
                     disabled={proposalSubmitting || !selectedJobId}
                     className="px-5 py-2 rounded-lg bg-[#BD214C] hover:bg-[#a61b42] text-white text-xs font-bold disabled:bg-stone-300 transition-all shadow-xs"
                   >
-                    {proposalSubmitting ? 'Mengirimkan...' : 'Kirim Pengajuan ke Alumni'}
+                    {proposalSubmitting ? 'Mengirimkan...' : 'Kirim Rekomendasi ke Alumni'}
                   </button>
                 </div>
               </form>
             )}
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import {
   Users,
@@ -49,11 +51,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
       {/* Intro Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-[#EA5543]/10 text-[#EA5543] mb-1">
+          <span className="inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-[#C73A29]/10 text-[#C73A29] mb-1">
             Dashboard Operasional Gifari (Talent Lead)
           </span>
           <h1 className="text-2xl font-bold text-[#242424] tracking-tight">
-            Ringkasan Talent &amp; Lowongan Boleh Belajar
+            Ringkasan Kandidat &amp; Lowongan Boleh Belajar
           </h1>
           <p className="text-xs sm:text-sm text-[#595959] mt-0.5">
             Pantau beban kerja harian, proses seleksi yang membutuhkan tindak lanjut, dan profil alumni yang perlu dikonfirmasi.
@@ -69,7 +71,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             <Users className="w-4 h-4 text-[#BD214C]" />
           </div>
           <div className="text-2xl font-bold text-[#242424] mt-2">{activeSeekers}</div>
-          <div className="text-[11px] text-[#595959] mt-1">Siap direkomendasikan</div>
+          <div className="text-xs text-[#595959] mt-1">Siap direkomendasikan</div>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-[#D9D9D9] shadow-xs">
@@ -78,7 +80,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             <Briefcase className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-2xl font-bold text-[#242424] mt-2">{activeJobsCount}</div>
-          <div className="text-[11px] text-[#595959] mt-1">Status Published</div>
+          <div className="text-xs text-[#595959] mt-1">Status Published</div>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-[#D9D9D9] shadow-xs">
@@ -87,7 +89,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             <GitPullRequest className="w-4 h-4 text-blue-600" />
           </div>
           <div className="text-2xl font-bold text-[#242424] mt-2">{activeProcessesCount}</div>
-          <div className="text-[11px] text-[#595959] mt-1">Kandidat di pipeline</div>
+          <div className="text-xs text-[#595959] mt-1">Kandidat di pipeline</div>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-[#D9D9D9] shadow-xs">
@@ -98,7 +100,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
           <div className="text-2xl font-bold text-[#EA5543] mt-2">
             {overdueTasks.length + dueTodayTasks.length}
           </div>
-          <div className="text-[11px] text-[#595959] mt-1">
+          <div className="text-xs text-[#595959] mt-1">
             {overdueTasks.length} terlambat • {dueTodayTasks.length} hari ini
           </div>
         </div>
@@ -109,7 +111,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             <Clock className="w-4 h-4 text-amber-600" />
           </div>
           <div className="text-2xl font-bold text-amber-600 mt-2">{staleProfiles}</div>
-          <div className="text-[11px] text-[#595959] mt-1">&gt;30 hari tanpa update</div>
+          <div className="text-xs text-[#595959] mt-1">&gt;30 hari tanpa update</div>
         </div>
       </div>
 
@@ -118,7 +120,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
         <div className="lg:col-span-7 bg-white rounded-xl border border-[#D9D9D9] p-5 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-[#D9D9D9]">
             <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-md bg-[#EA5543]/15 text-[#EA5543] flex items-center justify-center font-bold text-xs">
+              <span className="w-6 h-6 rounded-md bg-[#C73A29]/15 text-[#C73A29] flex items-center justify-center font-bold text-xs">
                 !
               </span>
               <h3 className="font-bold text-base text-[#242424]">Tugas Tindak Lanjut Jatuh Tempo</h3>
@@ -157,8 +159,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                       />
                       <div>
                         <div className="font-bold text-[#242424] leading-snug">{task.title}</div>
-                        <div className="text-[11px] text-[#595959] mt-0.5">{task.description}</div>
-                        <div className="flex items-center gap-2 mt-1.5 text-[10px]">
+                        <div className="text-xs text-[#595959] mt-0.5">{task.description}</div>
+                        <div className="flex items-center gap-2 mt-1.5 text-xs">
                           <span
                             className={`px-1.5 py-0.2 rounded font-bold uppercase ${
                               isOverdue ? 'bg-rose-200 text-rose-900' : 'bg-amber-200 text-amber-900'
@@ -173,7 +175,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
 
                     <button
                       onClick={() => onNavigate('admin-pipeline')}
-                      className="px-2.5 py-1 rounded bg-white border border-[#D9D9D9] hover:border-[#BD214C] text-[11px] font-semibold text-[#242424] shrink-0"
+                      className="px-2.5 py-1 rounded bg-white border border-[#D9D9D9] hover:border-[#BD214C] text-xs font-semibold text-[#242424] shrink-0"
                     >
                       Buka Proses
                     </button>
@@ -214,13 +216,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-[#242424]">{app.alumniName}</span>
-                    <span className="text-[10px] text-[#595959]">{formatDateIndo(app.createdAt)}</span>
+                    <span className="text-xs text-[#595959]">{formatDateIndo(app.createdAt)}</span>
                   </div>
                   <div className="text-[#595959]">
                     Melamar ke: <span className="font-semibold text-[#242424]">{app.jobTitle}</span> ({app.companyName})
                   </div>
                   <div className="flex items-center justify-between pt-1 border-t border-[#F7F7F7]">
-                    <span className="text-[11px] text-[#595959]">CV: {app.documentName}</span>
+                    <span className="text-xs text-[#595959]">CV: {app.documentName}</span>
                     <button
                       onClick={() => onNavigate('admin-pipeline')}
                       className="text-xs font-bold text-[#BD214C] hover:underline flex items-center gap-1"

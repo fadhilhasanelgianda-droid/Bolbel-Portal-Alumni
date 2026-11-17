@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   FileText,
   Clock,
@@ -15,30 +18,42 @@ import {
   ArrowRight,
   RotateCcw,
 } from 'lucide-react';
-import { useDataStore } from '../../domain/dataStore.tsx';
+import { useDataStore, useProcessEvents } from '../../domain/dataStore.tsx';
+import { shortRef } from '../../domain/labels.ts';
 import type { CandidateProcess, SelectionStage, ProcessOutcome } from '../../domain/types.ts';
 import {
   STAGE_CONFIG,
   OUTCOME_CONFIG,
   formatDateIndo,
 } from '../../domain/stateMachine.ts';
+import { Modal } from '../Modal.tsx';
+import { processPath } from '../routes.ts';
 
-export const MyApplications: React.FC = () => {
+export const MyApplications: React.FC<{ routeProcessId?: string }> = ({ routeProcessId }) => {
+  const router = useRouter();
   const {
     currentUser,
     processes,
-    events,
     approveAdminProposal,
     rejectAdminProposal,
     withdrawApplication,
   } = useDataStore();
 
-  const [selectedProcessId, setSelectedProcessId] = useState<string | null>(null);
+  const [selectedProcessId, setSelectedProcessId] = useState<string | null>(routeProcessId ?? null);
+  // Keep the selection in the URL (replace, so Back leaves the page instead of stepping through rows)
+  useEffect(() => {
+    if (routeProcessId) setSelectedProcessId(routeProcessId);
+  }, [routeProcessId]);
+  const selectProcess = (id: string) => {
+    setSelectedProcessId(id);
+    router.replace(processPath('applications', id), { scroll: false });
+  };
 
   // Proposal modal & Withdraw modal
   const [withdrawTargetProcess, setWithdrawTargetProcess] = useState<CandidateProcess | null>(null);
   const [withdrawReason, setWithdrawReason] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Filter processes belonging to current user
   const myProcesses = processes.filter((p) => p.alumniId === currentUser.id);
@@ -56,19 +71,20 @@ export const MyApplications: React.FC = () => {
   const activeProcess = myProcesses.find((p) => p.id === selectedProcessId) || otherApplications[0] || null;
 
   // Events for selected process
-  const activeEvents = events
-    .filter((e) => e.processId === activeProcess?.id)
-    .sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime());
+  const activeEvents = useProcessEvents(activeProcess);
 
   const handleApproveProposal = async (procId: string) => {
     setIsProcessing(true);
-    await approveAdminProposal(procId);
+    const res = await approveAdminProposal(procId);
+    setActionError(res.success ? null : (res.error ?? 'Gagal menyetujui rekomendasi.'));
     setIsProcessing(false);
   };
 
   const handleRejectProposal = async (procId: string) => {
+    if (!window.confirm('Tolak peluang ini? CV kamu tidak akan diteruskan ke company, dan keputusan ini tidak bisa diubah.')) return;
     setIsProcessing(true);
-    await rejectAdminProposal(procId);
+    const res = await rejectAdminProposal(procId);
+    setActionError(res.success ? null : (res.error ?? 'Gagal menolak rekomendasi.'));
     setIsProcessing(false);
   };
 
@@ -76,8 +92,13 @@ export const MyApplications: React.FC = () => {
     e.preventDefault();
     if (!withdrawTargetProcess || !withdrawReason) return;
     setIsProcessing(true);
-    await withdrawApplication(withdrawTargetProcess.id, withdrawReason);
+    const res = await withdrawApplication(withdrawTargetProcess.id, withdrawReason);
     setIsProcessing(false);
+    if (!res.success) {
+      setActionError(res.error ?? 'Gagal menarik lamaran.');
+      return;
+    }
+    setActionError(null);
     setWithdrawTargetProcess(null);
     setWithdrawReason('');
   };
@@ -101,6 +122,12 @@ export const MyApplications: React.FC = () => {
         </p>
       </div>
 
+      {actionError && (
+        <div role="alert" className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700">
+          {actionError}
+        </div>
+      )}
+
       {/* FR07 Proactive Proposals Banner */}
       {pendingProposals.length > 0 && (
         <div className="p-5 rounded-2xl bg-[#F9EDDE] border-2 border-[#EA5543]/40 space-y-4 shadow-xs">
@@ -110,7 +137,7 @@ export const MyApplications: React.FC = () => {
             </span>
             <div>
               <h3 className="font-bold text-base text-[#242424]">
-                Permintaan Persetujuan Pengajuan Rekomendasi ({pendingProposals.length})
+                Permintaan Persetujuan Rekomendasi ({pendingProposals.length})
               </h3>
               <p className="text-xs text-[#595959]">
                 Admin BolBel menemukan lowongan yang cocok dengan profilmu dan meminta izin sebelum CV kamu
@@ -188,7 +215,7 @@ export const MyApplications: React.FC = () => {
               return (
                 <button
                   key={proc.id}
-                  onClick={() => setSelectedProcessId(proc.id)}
+                  onClick={() => selectProcess(proc.id)}
                   className={`w-full text-left p-4 rounded-xl border transition-all ${
                     isSelected
                       ? 'bg-white border-[#BD214C] shadow-md ring-1 ring-[#BD214C]'
@@ -197,11 +224,11 @@ export const MyApplications: React.FC = () => {
                 >
                   <div className="flex items-center justify-between gap-2 mb-1.5">
                     <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold border ${outcomeConfig.badgeColor}`}
+                      className={`px-2 py-0.5 rounded text-xs font-bold border ${outcomeConfig.badgeColor}`}
                     >
                       {outcomeConfig.label}
                     </span>
-                    <span className="text-[11px] text-[#595959] flex items-center gap-1">
+                    <span className="text-xs text-[#595959] flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {formatDateIndo(proc.lastStageUpdatedAt)}
                     </span>
@@ -215,11 +242,11 @@ export const MyApplications: React.FC = () => {
 
                   <div className="mt-3 pt-2.5 border-t border-[#F7F7F7] flex items-center justify-between text-xs">
                     <span className="font-semibold text-[#BD214C]">{stageConfig.label}</span>
-                    <span className="text-[11px] text-[#595959]">
+                    <span className="text-xs text-[#595959]">
                       {proc.origin === 'internal_apply'
                         ? 'Via BolBel'
                         : proc.origin === 'external_report'
-                        ? 'Apply Eksternal'
+                        ? 'Lamar di Situs Company'
                         : 'Rekomendasi Admin'}
                     </span>
                   </div>
@@ -243,7 +270,7 @@ export const MyApplications: React.FC = () => {
                       {OUTCOME_CONFIG[activeProcess.outcome]?.label}
                     </span>
                     <span className="text-xs text-[#595959]">
-                      ID: <span className="font-mono">{activeProcess.id}</span>
+                      Kode lamaran: <span className="font-mono" title={activeProcess.id}>{shortRef(activeProcess.id)}</span>
                     </span>
                   </div>
                   <h2 className="text-xl font-bold text-[#242424]">{activeProcess.jobTitle}</h2>
@@ -287,10 +314,10 @@ export const MyApplications: React.FC = () => {
                             : 'bg-[#F7F7F7] text-[#595959] border-[#D9D9D9]'
                         }`}
                       >
-                        <span className="text-[10px] uppercase font-bold tracking-wider block opacity-75">
+                        <span className="text-xs uppercase font-bold tracking-wider block opacity-75">
                           Tahap {idx + 1}
                         </span>
-                        <span className="font-semibold text-[11px] leading-tight mt-0.5">
+                        <span className="font-semibold text-xs leading-tight mt-0.5">
                           {STAGE_CONFIG[stageKey]?.label}
                         </span>
                       </div>
@@ -314,11 +341,11 @@ export const MyApplications: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <FileText className="w-4 h-4 text-[#BD214C]" />
                   <div>
-                    <span className="text-[#595959] block text-[11px]">Versi CV saat submit:</span>
+                    <span className="text-[#595959] block text-xs">Versi CV saat submit:</span>
                     <span className="font-bold text-[#242424]">{activeProcess.documentName}</span>
                   </div>
                 </div>
-                <span className="text-[10px] text-[#595959] italic">Terkunci ke lamaran ini</span>
+                <span className="text-xs text-[#595959] italic">Terkunci ke lamaran ini</span>
               </div>
 
               {/* Timeline of events (Official updates from Gifari & BolBel) */}
@@ -333,7 +360,7 @@ export const MyApplications: React.FC = () => {
                     {activeEvents.map((ev) => (
                       <div key={ev.id} className="relative pl-8 text-xs space-y-1">
                         <div className="absolute left-2 top-1.5 w-3 h-3 rounded-full bg-[#BD214C] border-2 border-white -translate-x-1/2" />
-                        <div className="flex items-center justify-between text-[#595959] text-[11px]">
+                        <div className="flex items-center justify-between text-[#595959] text-xs">
                           <span className="font-bold text-[#242424]">{ev.actorName}</span>
                           <span>
                             Dicatat: {formatDateIndo(ev.recordedAt)}
@@ -362,7 +389,7 @@ export const MyApplications: React.FC = () => {
 
       {/* Withdraw Confirmation Modal */}
       {withdrawTargetProcess && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+        <Modal onClose={isProcessing ? () => undefined : () => setWithdrawTargetProcess(null)} label="Konfirmasi tarik diri">
           <div className="relative bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
             <h3 className="text-lg font-bold text-[#242424]">Konfirmasi Penarikan Diri</h3>
             <p className="text-xs text-[#595959] mt-1 leading-relaxed">
@@ -374,7 +401,7 @@ export const MyApplications: React.FC = () => {
             <div className="my-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 space-y-1">
               <strong className="block font-bold">Ketentuan Penarikan Diri:</strong>
               <p>
-                Sistem akan mencatat pencabutan persetujuan (consent) dan memblokir pengiriman berkas baru. Berkas
+                Sistem akan mencatat pencabutan persetujuan dan memblokir pengiriman berkas baru. Berkas
                 yang telah terlanjur dikirimkan ke pihak company tidak dapat ditarik otomatis, namun Gifari akan
                 memberitahu PIC company.
               </p>
@@ -415,7 +442,7 @@ export const MyApplications: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

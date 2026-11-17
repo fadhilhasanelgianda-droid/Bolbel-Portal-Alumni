@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import {
   Briefcase,
@@ -17,6 +19,8 @@ import {
 import { useDataStore } from '../../domain/dataStore.tsx';
 import type { Job, JobStatus, ApplyChannel, SalaryType, WorkType, WorkModel, ExperienceLevel } from '../../domain/types.ts';
 import { formatCurrencyIDR, formatDateIndo } from '../../domain/stateMachine.ts';
+import { WORK_MODEL_LABEL } from '../../domain/labels.ts';
+import { Modal } from '../Modal.tsx';
 
 export const JobManagement: React.FC = () => {
   const { jobs, companies, addJob, updateJobStatus, addCompany } = useDataStore();
@@ -47,6 +51,15 @@ export const JobManagement: React.FC = () => {
   const [newExternalUrl, setNewExternalUrl] = useState('');
   const [newDeadline, setNewDeadline] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
+  const [companyError, setCompanyError] = useState<string | null>(null);
+  const [closeError, setCloseError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const changeStatus = async (jobId: string, status: Job['status'], reason?: string) => {
+    const res = await updateJobStatus(jobId, status, reason);
+    setActionError(res.success ? null : (res.error ?? 'Gagal mengubah status lowongan.'));
+    return res;
+  };
 
   // Add Company Form State
   const [compName, setCompName] = useState('');
@@ -58,7 +71,7 @@ export const JobManagement: React.FC = () => {
 
   const filteredJobs = jobs.filter((j) => (statusFilter === 'all' ? true : j.status === statusFilter));
 
-  const handleCreateJob = (e: React.FormEvent) => {
+  const handleCreateJob = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
@@ -69,7 +82,7 @@ export const JobManagement: React.FC = () => {
     }
 
     if (newChannel === 'external' && !newExternalUrl) {
-      setFormError('Untuk jalur Apply Eksternal, URL aplikasi wajib diisi.');
+      setFormError('Untuk jalur lamaran di situs company, URL halaman lamaran wajib diisi.');
       return;
     }
 
@@ -83,7 +96,7 @@ export const JobManagement: React.FC = () => {
       .map((r) => r.trim())
       .filter((r) => r.length > 0);
 
-    addJob({
+    const res = await addJob({
       companyId: comp.id,
       companyName: comp.name,
       title: newJobTitle,
@@ -105,7 +118,12 @@ export const JobManagement: React.FC = () => {
       processOwner: 'Gifari',
       deadlineDate: newDeadline || undefined,
     });
+    if (!res.success) {
+      setFormError(res.error ?? 'Gagal menyimpan lowongan.');
+      return;
+    }
 
+    setFormError(null);
     setShowAddJobModal(false);
     // Reset fields
     setNewJobTitle('');
@@ -114,11 +132,11 @@ export const JobManagement: React.FC = () => {
     setNewRequirements('');
   };
 
-  const handleCreateCompany = (e: React.FormEvent) => {
+  const handleCreateCompany = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!compName) return;
 
-    addCompany({
+    const res = await addCompany({
       name: compName,
       industry: compIndustry || 'Teknologi & Digital',
       websiteUrl: compWebsite || undefined,
@@ -127,7 +145,12 @@ export const JobManagement: React.FC = () => {
       internalPicContact: compContact || undefined,
       internalNotes: compNotes || undefined,
     });
+    if (!res.success) {
+      setCompanyError(res.error ?? 'Gagal menyimpan company.');
+      return;
+    }
 
+    setCompanyError(null);
     setShowAddCompanyModal(false);
     setCompName('');
     setCompIndustry('');
@@ -137,16 +160,27 @@ export const JobManagement: React.FC = () => {
     setCompNotes('');
   };
 
-  const handleCloseJobSubmit = (e: React.FormEvent) => {
+  const handleCloseJobSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!closingJob || !closeReason) return;
-    updateJobStatus(closingJob.id, 'closed', closeReason);
+    const res = await changeStatus(closingJob.id, 'closed', closeReason);
+    if (!res.success) {
+      setCloseError(res.error ?? 'Gagal menutup lowongan.');
+      return;
+    }
+    setCloseError(null);
     setClosingJob(null);
     setCloseReason('');
   };
 
   return (
     <div className="space-y-6">
+      {actionError && (
+        <div role="alert" className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700">
+          {actionError}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -198,7 +232,7 @@ export const JobManagement: React.FC = () => {
             <thead className="bg-[#F7F7F7] border-b border-[#D9D9D9] text-[#595959] uppercase tracking-wider font-semibold">
               <tr>
                 <th className="px-4 py-3">Posisi &amp; Company</th>
-                <th className="px-4 py-3">Jalur Apply</th>
+                <th className="px-4 py-3">Jalur Lamaran</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Kompensasi</th>
                 <th className="px-4 py-3">Tenggat</th>
@@ -217,15 +251,15 @@ export const JobManagement: React.FC = () => {
                   <tr key={job.id} className="hover:bg-[#F9EDDE]/20 transition-colors">
                     <td className="px-4 py-3.5">
                       <div className="font-bold text-[#242424] text-sm">{job.title}</div>
-                      <div className="text-[11px] text-[#595959] flex items-center gap-1 mt-0.5">
+                      <div className="text-xs text-[#595959] flex items-center gap-1 mt-0.5">
                         <Building className="w-3.5 h-3.5" />
-                        {job.companyName} • {job.location} ({job.workModel.toUpperCase()})
+                        {job.companyName} • {job.location} ({WORK_MODEL_LABEL[job.workModel]})
                       </div>
                     </td>
 
                     <td className="px-4 py-3.5">
                       <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold ${
                           job.applyChannel === 'bolbel'
                             ? 'bg-[#BD214C]/10 text-[#BD214C]'
                             : 'bg-blue-50 text-blue-700'
@@ -237,7 +271,7 @@ export const JobManagement: React.FC = () => {
 
                     <td className="px-4 py-3.5">
                       <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
                           job.status === 'published'
                             ? 'bg-emerald-100 text-emerald-800'
                             : job.status === 'paused'
@@ -250,13 +284,13 @@ export const JobManagement: React.FC = () => {
                         {job.status}
                       </span>
                       {job.closedReason && (
-                        <div className="text-[10px] text-[#595959] italic mt-0.5 max-w-[180px] truncate" title={job.closedReason}>
+                        <div className="text-xs text-[#595959] italic mt-0.5 max-w-[180px] truncate" title={job.closedReason}>
                           Alasan: {job.closedReason}
                         </div>
                       )}
                     </td>
 
-                    <td className="px-4 py-3.5 text-[11px]">
+                    <td className="px-4 py-3.5 text-xs">
                       {job.salaryType === 'range' && job.salaryMin && job.salaryMax
                         ? `${formatCurrencyIDR(job.salaryMin)} - ${formatCurrencyIDR(job.salaryMax)}`
                         : job.salaryType === 'confidential'
@@ -264,15 +298,15 @@ export const JobManagement: React.FC = () => {
                         : 'Belum Diinfokan'}
                     </td>
 
-                    <td className="px-4 py-3.5 text-[11px] text-[#595959]">
+                    <td className="px-4 py-3.5 text-xs text-[#595959]">
                       {job.deadlineDate ? formatDateIndo(job.deadlineDate) : 'Tanpa Tenggat'}
                     </td>
 
                     <td className="px-4 py-3.5 text-right space-x-1 whitespace-nowrap">
                       {job.status === 'published' && (
                         <button
-                          onClick={() => updateJobStatus(job.id, 'paused')}
-                          className="px-2 py-1 rounded border border-[#D9D9D9] hover:bg-stone-50 text-[11px] font-semibold text-[#595959]"
+                          onClick={() => changeStatus(job.id, 'paused')}
+                          className="px-2 py-1 rounded border border-[#D9D9D9] hover:bg-stone-50 text-xs font-semibold text-[#595959]"
                           title="Jeda pendaftaran"
                         >
                           Jeda
@@ -281,8 +315,8 @@ export const JobManagement: React.FC = () => {
 
                       {job.status === 'paused' && (
                         <button
-                          onClick={() => updateJobStatus(job.id, 'published')}
-                          className="px-2 py-1 rounded bg-emerald-600 text-white text-[11px] font-bold"
+                          onClick={() => changeStatus(job.id, 'published')}
+                          className="px-2 py-1 rounded bg-emerald-600 text-white text-xs font-bold"
                           title="Buka kembali pendaftaran"
                         >
                           Publikasikan
@@ -292,7 +326,7 @@ export const JobManagement: React.FC = () => {
                       {job.status !== 'closed' && (
                         <button
                           onClick={() => setClosingJob(job)}
-                          className="px-2 py-1 rounded border border-rose-200 hover:bg-rose-50 text-[11px] font-semibold text-rose-700"
+                          className="px-2 py-1 rounded border border-rose-200 hover:bg-rose-50 text-xs font-semibold text-rose-700"
                         >
                           Tutup
                         </button>
@@ -300,8 +334,8 @@ export const JobManagement: React.FC = () => {
 
                       {job.status === 'closed' && (
                         <button
-                          onClick={() => updateJobStatus(job.id, 'published')}
-                          className="px-2 py-1 rounded border border-[#D9D9D9] hover:bg-stone-50 text-[11px] font-semibold text-[#242424]"
+                          onClick={() => changeStatus(job.id, 'published')}
+                          className="px-2 py-1 rounded border border-[#D9D9D9] hover:bg-stone-50 text-xs font-semibold text-[#242424]"
                         >
                           Buka Ulang
                         </button>
@@ -317,7 +351,7 @@ export const JobManagement: React.FC = () => {
 
       {/* Add Job Modal (PRD FR04) */}
       {showAddJobModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+        <Modal onClose={() => setShowAddJobModal(false)} label="Tambah lowongan baru">
           <div className="relative bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-xl max-h-[90vh] overflow-y-auto space-y-4">
             <button
               onClick={() => setShowAddJobModal(false)}
@@ -329,7 +363,7 @@ export const JobManagement: React.FC = () => {
 
             <div>
               <span className="text-xs font-bold text-[#BD214C] uppercase tracking-wider">
-                Kurasi Lowongan Baru (PRD FR04)
+                Kurasi Lowongan Baru
               </span>
               <h2 className="text-xl font-bold text-[#242424] mt-1">Tambah Lowongan Terkurasi</h2>
             </div>
@@ -426,7 +460,7 @@ export const JobManagement: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-[#F7F7F7]">
                 <div>
                   <label htmlFor="create-job-channel" className="block font-bold text-[#242424] mb-1">
-                    Jalur Apply <span className="text-[#BD214C]">*</span>
+                    Jalur Lamaran <span className="text-[#BD214C]">*</span>
                   </label>
                   <select
                     id="create-job-channel"
@@ -435,7 +469,7 @@ export const JobManagement: React.FC = () => {
                     className="w-full p-2.5 rounded-lg border border-[#D9D9D9] text-[#242424] bg-white focus:outline-hidden focus:border-[#BD214C]"
                   >
                     <option value="bolbel">Melalui BolBel (Tersimpan di Portal)</option>
-                    <option value="external">Apply Eksternal (Situs Company)</option>
+                    <option value="external">Lamar di Situs Company</option>
                   </select>
                 </div>
 
@@ -468,7 +502,7 @@ export const JobManagement: React.FC = () => {
               {newChannel === 'external' && (
                 <div>
                   <label htmlFor="create-job-external-url" className="block font-bold text-[#242424] mb-1">
-                    URL Halaman Apply Eksternal (HTTPS) <span className="text-[#BD214C]">*</span>
+                    URL Halaman Lamaran di Situs Company (HTTPS) <span className="text-[#BD214C]">*</span>
                   </label>
                   <input
                     id="create-job-external-url"
@@ -543,12 +577,12 @@ export const JobManagement: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Add Company Modal */}
       {showAddCompanyModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+        <Modal onClose={() => setShowAddCompanyModal(false)} label="Tambah company baru">
           <div className="relative bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl space-y-4">
             <button
               onClick={() => setShowAddCompanyModal(false)}
@@ -559,6 +593,12 @@ export const JobManagement: React.FC = () => {
             </button>
 
             <h3 className="text-lg font-bold text-[#242424]">Tambah Partner Company</h3>
+
+            {companyError && (
+              <div className="mb-3 p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700">
+                {companyError}
+              </div>
+            )}
 
             <form onSubmit={handleCreateCompany} className="space-y-3.5 text-xs">
               <div>
@@ -654,12 +694,12 @@ export const JobManagement: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Close Job with Mandatory Reason Modal (PRD Section 5) */}
       {closingJob && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+        <Modal onClose={() => setClosingJob(null)} label="Tutup lowongan">
           <div className="relative bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
             <div>
               <span className="text-xs font-bold text-rose-600 uppercase tracking-wider">
@@ -670,6 +710,12 @@ export const JobManagement: React.FC = () => {
                 Penutupan lowongan akan menolak pendaftaran baru di server. Berikan alasan penutupan resmi.
               </p>
             </div>
+
+            {closeError && (
+              <div className="mb-3 p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700">
+                {closeError}
+              </div>
+            )}
 
             <form onSubmit={handleCloseJobSubmit} className="space-y-4">
               <div>
@@ -705,7 +751,7 @@ export const JobManagement: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

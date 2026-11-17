@@ -1,14 +1,18 @@
+'use client';
+
 import React, { useState } from 'react';
 import { X, ExternalLink, Calendar, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { Job } from '../../domain/types.ts';
 import { useDataStore } from '../../domain/dataStore.tsx';
+import { Modal } from '../Modal.tsx';
 
 interface ReportExternalApplyModalProps {
   job: Job;
   onClose: () => void;
+  onGoToApplications?: () => void;
 }
 
-export const ReportExternalApplyModal: React.FC<ReportExternalApplyModalProps> = ({ job, onClose }) => {
+export const ReportExternalApplyModal: React.FC<ReportExternalApplyModalProps> = ({ job, onClose, onGoToApplications }) => {
   const { reportExternalApply } = useDataStore();
   const [applyDate, setApplyDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
@@ -40,7 +44,7 @@ export const ReportExternalApplyModal: React.FC<ReportExternalApplyModalProps> =
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+    <Modal onClose={isSubmitting ? () => undefined : onClose} label="Laporan apply eksternal">
       <div className="relative bg-white rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-xl">
         {!success && (
           <button
@@ -64,17 +68,22 @@ export const ReportExternalApplyModal: React.FC<ReportExternalApplyModalProps> =
               memantau dan membantu koordinasi tindak lanjut dengan company.
             </p>
             <button
-              onClick={onClose}
+              onClick={onGoToApplications ?? onClose}
               className="w-full py-2.5 bg-[#BD214C] text-white rounded-lg text-sm font-bold hover:bg-[#a61b42] transition-colors"
             >
-              Kembali ke Daftar Lowongan
+              {onGoToApplications ? 'Lihat Lamaran Saya' : 'Kembali ke Daftar Lowongan'}
             </button>
+            {onGoToApplications && (
+              <button onClick={onClose} className="w-full text-xs font-semibold text-[#595959] hover:text-[#BD214C]">
+                Kembali ke Daftar Lowongan
+              </button>
+            )}
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <span className="inline-block px-2 py-0.5 rounded text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                Pencatatan Apply Eksternal (FR06)
+              <span className="inline-block px-2 py-0.5 rounded text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                Pencatatan Apply Eksternal
               </span>
               <h2 className="text-xl font-bold text-[#242424] mt-1">{job.title}</h2>
               <p className="text-xs text-[#595959] mt-0.5">di {job.companyName}</p>
@@ -109,7 +118,7 @@ export const ReportExternalApplyModal: React.FC<ReportExternalApplyModalProps> =
                   required
                 />
               </div>
-              <span className="text-[11px] text-[#595959] mt-1 block">
+              <span className="text-xs text-[#595959] mt-1 block">
                 Tanggal tidak boleh di masa mendatang.
               </span>
             </div>
@@ -148,6 +157,6 @@ export const ReportExternalApplyModal: React.FC<ReportExternalApplyModalProps> =
           </form>
         )}
       </div>
-    </div>
+    </Modal>
   );
 };

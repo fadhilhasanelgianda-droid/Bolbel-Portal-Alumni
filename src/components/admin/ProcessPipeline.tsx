@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   GitPullRequest,
   Clock,
@@ -15,7 +18,8 @@ import {
   Lock,
   ArrowRight,
 } from 'lucide-react';
-import { useDataStore } from '../../domain/dataStore.tsx';
+import { useDataStore, useProcessEvents } from '../../domain/dataStore.tsx';
+import { shortRef } from '../../domain/labels.ts';
 import type {
   CandidateProcess,
   SelectionStage,
@@ -24,19 +28,30 @@ import type {
 import {
   STAGE_CONFIG,
   OUTCOME_CONFIG,
+  STAGE_TRANSITIONS,
+  ADMIN_SETTABLE_OUTCOMES,
   formatDateIndo,
 } from '../../domain/stateMachine.ts';
+import { Modal } from '../Modal.tsx';
+import { processPath } from '../routes.ts';
 
-export const ProcessPipeline: React.FC = () => {
+export const ProcessPipeline: React.FC<{ routeProcessId?: string }> = ({ routeProcessId }) => {
+  const router = useRouter();
   const {
     processes,
-    events,
-    consents,
     updateCandidateStage,
     forwardCVToCompany,
   } = useDataStore();
 
-  const [selectedProcessId, setSelectedProcessId] = useState<string | null>(null);
+  const [selectedProcessId, setSelectedProcessId] = useState<string | null>(routeProcessId ?? null);
+  // Keep the selection in the URL (replace, so Back leaves the page instead of stepping through rows)
+  useEffect(() => {
+    if (routeProcessId) setSelectedProcessId(routeProcessId);
+  }, [routeProcessId]);
+  const selectProcess = (id: string) => {
+    setSelectedProcessId(id);
+    router.replace(processPath('admin-pipeline', id), { scroll: false });
+  };
   const [filterStage, setFilterStage] = useState<string>('all');
   const [filterOutcome, setFilterOutcome] = useState<string>('all');
 
@@ -68,11 +83,12 @@ export const ProcessPipeline: React.FC = () => {
 
   const activeProcess = processes.find((p) => p.id === selectedProcessId) || filteredProcesses[0] || null;
 
-  const activeEvents = events
-    .filter((e) => e.processId === activeProcess?.id)
-    .sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime());
+  const activeEvents = useProcessEvents(activeProcess);
 
-  const activeConsent = consents.find((c) => c.processId === activeProcess?.id && !c.revokedAt);
+  const activeConsent =
+    activeProcess?.consentGrantedAt && !activeProcess.consentRevokedAt
+      ? { policyVersion: activeProcess.consentPolicyVersion ?? '-', grantedAt: activeProcess.consentGrantedAt }
+      : null;
 
   const openUpdateModal = () => {
     if (!activeProcess) return;
@@ -205,7 +221,7 @@ export const ProcessPipeline: React.FC = () => {
               return (
                 <button
                   key={proc.id}
-                  onClick={() => setSelectedProcessId(proc.id)}
+                  onClick={() => selectProcess(proc.id)}
                   className={`w-full text-left p-4 rounded-xl border transition-all ${
                     isSelected
                       ? 'bg-white border-[#BD214C] shadow-md ring-1 ring-[#BD214C]'
@@ -215,7 +231,7 @@ export const ProcessPipeline: React.FC = () => {
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span className="font-bold text-[#242424] text-sm">{proc.alumniName}</span>
                     <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold border ${outcomeConfig.badgeColor}`}
+                      className={`px-2 py-0.5 rounded text-xs font-bold border ${outcomeConfig.badgeColor}`}
                     >
                       {outcomeConfig.label}
                     </span>
@@ -225,7 +241,7 @@ export const ProcessPipeline: React.FC = () => {
                     {proc.jobTitle} • {proc.companyName}
                   </div>
 
-                  <div className="mt-3 pt-2 border-t border-[#F7F7F7] flex items-center justify-between text-[11px]">
+                  <div className="mt-3 pt-2 border-t border-[#F7F7F7] flex items-center justify-between text-xs">
                     <span className="font-semibold text-[#BD214C]">{stageConfig.label}</span>
                     <span className="text-[#595959]">
                       Update: {formatDateIndo(proc.lastStageUpdatedAt)}
@@ -244,7 +260,7 @@ export const ProcessPipeline: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#D9D9D9]">
               <div>
                 <span className="text-xs text-[#595959]">
-                  ID Proses: <span className="font-mono">{activeProcess.id}</span> (Versi: {activeProcess.version})
+                  Kode proses: <span className="font-mono" title={activeProcess.id}>{shortRef(activeProcess.id)}</span> (Versi: {activeProcess.version})
                 </span>
                 <h2 className="text-xl font-bold text-[#242424] mt-0.5">{activeProcess.alumniName}</h2>
                 <div className="text-xs font-semibold text-[#595959] mt-0.5">
@@ -278,13 +294,13 @@ export const ProcessPipeline: React.FC = () => {
             {/* Consent & Document Snapshot (PRD FR08 & FR12) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div className="p-3.5 rounded-xl bg-[#F7F7F7] border border-[#D9D9D9] space-y-1">
-                <span className="text-[#595959] block font-semibold text-[11px] uppercase tracking-wider">
-                  Status Persetujuan (Consent)
+                <span className="text-[#595959] block font-semibold text-xs uppercase tracking-wider">
+                  Status Persetujuan
                 </span>
                 {activeConsent ? (
                   <div className="text-emerald-700 font-bold flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4" /> Persetujuan Aktif ({activeConsent.policyVersion})
-                    <div className="text-[10px] text-[#595959] font-normal block">
+                    <div className="text-xs text-[#595959] font-normal block">
                       Disetujui: {formatDateIndo(activeConsent.grantedAt)}
                     </div>
                   </div>
@@ -300,7 +316,7 @@ export const ProcessPipeline: React.FC = () => {
               </div>
 
               <div className="p-3.5 rounded-xl bg-[#F7F7F7] border border-[#D9D9D9] space-y-1">
-                <span className="text-[#595959] block font-semibold text-[11px] uppercase tracking-wider">
+                <span className="text-[#595959] block font-semibold text-xs uppercase tracking-wider">
                   Dokumen CV Terkunci
                 </span>
                 <div className="flex items-center gap-2">
@@ -309,8 +325,8 @@ export const ProcessPipeline: React.FC = () => {
                     {activeProcess.documentName}
                   </span>
                 </div>
-                <span className="text-[10px] text-[#595959] block">
-                  ID Versi: {activeProcess.documentVersionId}
+                <span className="text-xs text-[#595959] block">
+                  Versi CV: <span className="font-mono" title={activeProcess.documentVersionId}>{shortRef(activeProcess.documentVersionId)}</span>
                 </span>
               </div>
             </div>
@@ -324,7 +340,7 @@ export const ProcessPipeline: React.FC = () => {
                 {activeEvents.map((ev) => (
                   <div key={ev.id} className="relative pl-8 text-xs space-y-1">
                     <div className="absolute left-2 top-1.5 w-3 h-3 rounded-full bg-[#BD214C] border-2 border-white -translate-x-1/2" />
-                    <div className="flex items-center justify-between text-[#595959] text-[11px]">
+                    <div className="flex items-center justify-between text-[#595959] text-xs">
                       <span className="font-bold text-[#242424]">
                         {ev.actorName} ({ev.actorRole.toUpperCase()})
                       </span>
@@ -335,7 +351,7 @@ export const ProcessPipeline: React.FC = () => {
 
                     {ev.publicMessage && (
                       <div className="p-2.5 rounded-lg bg-[#F9EDDE] border border-[#EADBCE] text-[#242424] leading-relaxed">
-                        <span className="text-[10px] uppercase font-bold text-[#BD214C] block mb-0.5">
+                        <span className="text-xs uppercase font-bold text-[#BD214C] block mb-0.5">
                           Pesan Terbuka (Dapat Dibaca Alumni)
                         </span>
                         {ev.publicMessage}
@@ -344,7 +360,7 @@ export const ProcessPipeline: React.FC = () => {
 
                     {ev.internalNotes && (
                       <div className="p-2.5 rounded-lg bg-stone-100 border border-stone-300 text-stone-800 leading-relaxed">
-                        <span className="text-[10px] uppercase font-bold text-stone-600 flex items-center gap-1 mb-0.5">
+                        <span className="text-xs uppercase font-bold text-stone-600 flex items-center gap-1 mb-0.5">
                           <Lock className="w-3 h-3" /> Catatan Internal Gifari (Privat)
                         </span>
                         {ev.internalNotes}
@@ -360,7 +376,7 @@ export const ProcessPipeline: React.FC = () => {
 
       {/* Stage Update Modal (PRD FR08) */}
       {isUpdateModalOpen && activeProcess && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+        <Modal onClose={() => setIsUpdateModalOpen(false)} label="Perbarui tahap seleksi">
           <div className="relative bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl space-y-4">
             <button
               onClick={() => setIsUpdateModalOpen(false)}
@@ -372,7 +388,7 @@ export const ProcessPipeline: React.FC = () => {
 
             <div>
               <span className="text-xs font-bold text-[#BD214C] uppercase tracking-wider">
-                Pembaruan Status Resmi (FR08)
+                Pembaruan Status Resmi
               </span>
               <h3 className="text-lg font-bold text-[#242424] mt-0.5">
                 {activeProcess.alumniName} — {activeProcess.jobTitle}
@@ -398,9 +414,9 @@ export const ProcessPipeline: React.FC = () => {
                     onChange={(e) => setUpdateStage(e.target.value as SelectionStage)}
                     className="w-full p-2.5 rounded-lg border border-[#D9D9D9] bg-white text-[#242424] focus:outline-hidden focus:border-[#BD214C]"
                   >
-                    {Object.entries(STAGE_CONFIG).map(([k, v]) => (
+                    {[activeProcess.currentStage, ...STAGE_TRANSITIONS[activeProcess.currentStage]].map((k) => (
                       <option key={k} value={k}>
-                        {v.label}
+                        {STAGE_CONFIG[k].label}
                       </option>
                     ))}
                   </select>
@@ -416,7 +432,7 @@ export const ProcessPipeline: React.FC = () => {
                     onChange={(e) => setUpdateOutcome(e.target.value as ProcessOutcome)}
                     className="w-full p-2.5 rounded-lg border border-[#D9D9D9] bg-white text-[#242424] focus:outline-hidden focus:border-[#BD214C]"
                   >
-                    {Object.entries(OUTCOME_CONFIG).map(([k, v]) => (
+                    {ADMIN_SETTABLE_OUTCOMES.map((k) => [k, OUTCOME_CONFIG[k]] as const).map(([k, v]) => (
                       <option key={k} value={k}>
                         {v.label}
                       </option>
@@ -439,7 +455,7 @@ export const ProcessPipeline: React.FC = () => {
                     required
                     className="w-full p-2.5 rounded-lg border border-[#D9D9D9] text-[#242424] focus:outline-hidden focus:border-[#BD214C]"
                   />
-                  <span className="text-[10px] text-[#595959] mt-0.5 block">Tidak boleh masa depan</span>
+                  <span className="text-xs text-[#595959] mt-0.5 block">Tidak boleh masa depan</span>
                 </div>
 
                 <div>
@@ -530,16 +546,16 @@ export const ProcessPipeline: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Forward CV Action Modal (PRD FR08 & FR07) */}
       {isForwardModalOpen && activeProcess && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+        <Modal onClose={() => setIsForwardModalOpen(false)} label="Teruskan CV ke company">
           <div className="relative bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
             <div>
               <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">
-                Verifikasi Pengiriman CV ke Company (FR08)
+                Verifikasi Pengiriman CV ke Company
               </span>
               <h3 className="text-lg font-bold text-[#242424] mt-0.5">
                 Teruskan Berkas ke {activeProcess.companyName}
@@ -551,7 +567,7 @@ export const ProcessPipeline: React.FC = () => {
             </div>
 
             <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 space-y-1">
-              <strong className="block font-bold">Pemeriksaan Persetujuan (Consent Active):</strong>
+              <strong className="block font-bold">Pemeriksaan Persetujuan:</strong>
               <p>
                 Alumni telah memberikan persetujuan eksplisit untuk posisi ini dengan CV versi{' '}
                 <span className="font-semibold">{activeProcess.documentName}</span>.
@@ -585,7 +601,7 @@ export const ProcessPipeline: React.FC = () => {
                 />
               </div>
 
-              <div className="text-[11px] text-[#595959]">
+              <div className="text-xs text-[#595959]">
                 * Aksi ini otomatis menjadwalkan tugas tindak lanjut (follow-up) 7 hari kerja ke depan bagi Gifari.
               </div>
 
@@ -608,7 +624,7 @@ export const ProcessPipeline: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );
