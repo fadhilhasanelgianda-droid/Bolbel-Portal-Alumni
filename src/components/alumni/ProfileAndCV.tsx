@@ -111,6 +111,11 @@ export const ProfileAndCV: React.FC = () => {
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaveError(null);
+    if (formData.opennessStatus === 'belum_dikonfirmasi') {
+      setSaveSuccess(false);
+      setSaveError('Pilih keterbukaanmu terhadap peluang kerja sebelum menyimpan.');
+      return;
+    }
     const res = await updateProfile(formData);
     if (!res.success) {
       setSaveSuccess(false);
@@ -370,7 +375,8 @@ export const ProfileAndCV: React.FC = () => {
               <div>
                 <h3 className="text-lg font-bold text-[#242424]">Profil & Preferensi Karier</h3>
                 <p className="text-xs text-[#595959]">
-                  Digunakan untuk verifikasi ketersediaan dan kriteria pencarian kandidat oleh admin.
+                  Digunakan untuk verifikasi ketersediaan dan kriteria pencarian kandidat oleh admin. Kolom bertanda{' '}
+                  <span className="text-[#BD214C]">*</span> wajib diisi sebelum kamu bisa melamar.
                 </p>
               </div>
 
@@ -461,6 +467,9 @@ export const ProfileAndCV: React.FC = () => {
                   }
                   className="w-full p-2.5 rounded-lg border border-[#D9D9D9] text-[#242424] bg-white focus:outline-hidden focus:border-[#BD214C]"
                 >
+                  <option value="belum_dikonfirmasi" disabled>
+                    Pilih salah satu…
+                  </option>
                   <option value="aktif_mencari">Aktif Mencari Peluang</option>
                   <option value="terbuka">Terbuka Jika Ada yang Sesuai</option>
                   <option value="tidak_mencari">Tidak Sedang Mencari</option>
@@ -506,7 +515,7 @@ export const ProfileAndCV: React.FC = () => {
             {/* Target Role & Preferensi */}
             <div className="space-y-4 pt-2 border-t border-[#F7F7F7] text-xs">
               <div>
-                <label htmlFor="target-role-input" className="block font-bold text-[#242424] mb-1">Target Posisi / Role</label>
+                <label htmlFor="target-role-input" className="block font-bold text-[#242424] mb-1">Target Posisi / Role <span className="text-[#BD214C]">*</span></label>
                 <div className="flex gap-2">
                   <input
                     id="target-role-input"
@@ -581,7 +590,7 @@ export const ProfileAndCV: React.FC = () => {
 
               {/* Work Models */}
               <div>
-                <label className="block font-bold text-[#242424] mb-1">Model Kerja yang Dipertimbangkan</label>
+                <label className="block font-bold text-[#242424] mb-1">Model Kerja yang Dipertimbangkan <span className="text-[#BD214C]">*</span></label>
                 <div className="flex flex-wrap gap-2">
                   {(['wfo', 'hybrid', 'remote'] as WorkModel[]).map((m) => {
                     const active = formData.targetWorkModels.includes(m);
@@ -640,7 +649,7 @@ export const ProfileAndCV: React.FC = () => {
                   />
                   <div className="text-xs">
                     <span className="font-bold text-[#242424] block">
-                      Izinkan Penawaran Peluang Proaktif dari Tim BolBel (FR07)
+                      Izinkan Penawaran Peluang Proaktif dari Tim BolBel
                     </span>
                     <span className="text-[#595959] block mt-0.5">
                       Jika aktif, Gifari dapat merekomendasikan profilmu ke lowongan yang relevan. Setiap rekomendasi

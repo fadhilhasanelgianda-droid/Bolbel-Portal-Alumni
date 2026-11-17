@@ -26,11 +26,9 @@ export const DataImportAndAudit: React.FC = () => {
   const { roster, consents, importRosterBatch } = useDataStore();
 
   const [activeTab, setActiveTab] = useState<'import' | 'audit'>('import');
-  const [csvText, setCsvText] = useState(SAMPLE_CSV);
-  const [parsedRows, setParsedRows] = useState<CsvRosterImportRow[]>(() => {
-    const existingEmails = roster.map((r) => r.email);
-    return parseAndValidateRosterCsv(SAMPLE_CSV, existingEmails);
-  });
+  // Starts empty on purpose: the sample rows are fake and must never be committable by accident
+  const [csvText, setCsvText] = useState('');
+  const [parsedRows, setParsedRows] = useState<CsvRosterImportRow[]>([]);
   const [importSuccessMsg, setImportSuccessMsg] = useState<string | null>(null);
 
   const handleParseCsv = () => {
@@ -43,6 +41,7 @@ export const DataImportAndAudit: React.FC = () => {
   const handleCommitImport = async () => {
     const validRows = parsedRows.filter((r) => r.isValid && !r.isDuplicate);
     if (validRows.length === 0) return;
+    if (!window.confirm(`Impor ${validRows.length} alumni ke roster? Mereka akan bisa mengaktifkan akun lewat email masing-masing.`)) return;
 
     const count = await importRosterBatch(
       validRows.map((r) => ({
@@ -84,7 +83,7 @@ export const DataImportAndAudit: React.FC = () => {
           Impor Roster Awal &amp; Audit Privasi Data
         </h1>
         <p className="text-xs sm:text-sm text-[#595959] mt-0.5">
-          Kelola integritas identitas alumni (FR10) serta penegakan persetujuan pembagian data (FR12).
+          Kelola daftar alumni yang berhak memakai portal, dan pantau persetujuan pembagian data.
         </p>
       </div>
 
@@ -113,7 +112,7 @@ export const DataImportAndAudit: React.FC = () => {
       </div>
 
       {activeTab === 'import' ? (
-        /* Impor CSV Tab (FR10) */
+        /* Impor CSV Tab */
         <div className="space-y-6">
           <div className="bg-white rounded-xl border border-[#D9D9D9] p-5 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -140,6 +139,7 @@ export const DataImportAndAudit: React.FC = () => {
                 id="csv-input-area"
                 rows={5}
                 value={csvText}
+                placeholder={'Tempel data CSV di sini, atau unduh template untuk melihat formatnya.\nEmail,Nama Lengkap,Program,Batch,Eligibility'}
                 onChange={(e) => setCsvText(e.target.value)}
                 className="w-full font-mono text-xs p-3 rounded-lg border border-[#D9D9D9] text-[#242424] focus:outline-hidden focus:border-[#BD214C]"
               />
@@ -235,11 +235,11 @@ export const DataImportAndAudit: React.FC = () => {
           </div>
         </div>
       ) : (
-        /* Consent Audit Log Tab (FR12) */
+        /* Consent Audit Log Tab */
         <div className="bg-white rounded-xl border border-[#D9D9D9] overflow-hidden shadow-xs">
           <div className="p-4 border-b border-[#D9D9D9] bg-[#F7F7F7]">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#595959]">
-              Daftar Riwayat Persetujuan Pembagian CV &amp; Profil (FR12)
+              Daftar Riwayat Persetujuan Pembagian CV &amp; Profil
             </h4>
             <p className="text-[11px] text-[#595959] mt-0.5">
               Setiap lamaran mencatat persetujuan aktif spesifik per lowongan. Penarikan izin dicatat tanpa menghapus

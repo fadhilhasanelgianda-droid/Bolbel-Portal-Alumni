@@ -430,7 +430,7 @@ export const CandidateSearch: React.FC = () => {
 
             <div>
               <span className="text-xs font-bold text-[#BD214C] uppercase tracking-wider">
-                Pengajuan Peluang Proaktif (FR07)
+                Pengajuan Peluang Proaktif
               </span>
               <h3 className="text-lg font-bold text-[#242424] mt-0.5">
                 Rekomendasikan {proposingCandidate.fullName}
@@ -458,7 +458,7 @@ export const CandidateSearch: React.FC = () => {
 
             {!proposingCandidate.allowProactiveContact ? (
               <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 space-y-1">
-                <strong className="block font-bold">Izin Kontak Tidak Aktif (PRD FR07)</strong>
+                <strong className="block font-bold">Izin Kontak Tidak Aktif</strong>
                 <p>
                   Alumni ini tidak mengaktifkan izin penawaran proaktif. Sistem memblokir pengajuan admin dan hanya
                   mengizinkan alumni untuk melamar mandiri melalui daftar lowongan.

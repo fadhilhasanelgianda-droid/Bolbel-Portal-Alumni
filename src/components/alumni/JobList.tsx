@@ -22,7 +22,7 @@ import { JobDetailModal } from './JobDetailModal.tsx';
 import { ApplyBolBelModal } from './ApplyBolBelModal.tsx';
 import { ReportExternalApplyModal } from './ReportExternalApplyModal.tsx';
 
-export const JobList: React.FC = () => {
+export const JobList: React.FC<{ onGoToProfile?: () => void }> = ({ onGoToProfile }) => {
   const { jobs, processes, currentUser } = useDataStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedModel, setSelectedModel] = useState<string>('all');
@@ -330,6 +330,14 @@ export const JobList: React.FC = () => {
         <ApplyBolBelModal
           job={activeJobForApplyBolBel}
           onClose={() => setActiveJobForApplyBolBel(null)}
+          onGoToProfile={
+            onGoToProfile
+              ? () => {
+                  setActiveJobForApplyBolBel(null);
+                  onGoToProfile();
+                }
+              : undefined
+          }
         />
       )}
 

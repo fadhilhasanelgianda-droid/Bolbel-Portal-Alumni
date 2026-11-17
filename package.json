@@ -16,7 +16,6 @@
     "db:seed-demo": "tsx --env-file-if-exists=.env scripts/seed-demo.ts"
   },
   "dependencies": {
-    "@google/genai": "^2.4.0",
     "@node-rs/bcrypt": "^2.0.0",
     "@tailwindcss/postcss": "^4.3.3",
     "bcryptjs": "^3.0.3",

@@ -76,7 +76,7 @@ export const ReportExternalApplyModal: React.FC<ReportExternalApplyModalProps> =
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <span className="inline-block px-2 py-0.5 rounded text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                Pencatatan Apply Eksternal (FR06)
+                Pencatatan Apply Eksternal
               </span>
               <h2 className="text-xl font-bold text-[#242424] mt-1">{job.title}</h2>
               <p className="text-xs text-[#595959] mt-0.5">di {job.companyName}</p>

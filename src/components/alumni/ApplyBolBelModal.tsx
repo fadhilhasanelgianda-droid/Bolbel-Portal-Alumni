@@ -19,9 +19,11 @@ import { isMinimumProfileComplete } from '../../domain/stateMachine.ts';
 interface ApplyBolBelModalProps {
   job: Job;
   onClose: () => void;
+  /** Closes the modal and opens the Profil & CV tab. */
+  onGoToProfile?: () => void;
 }
 
-export const ApplyBolBelModal: React.FC<ApplyBolBelModalProps> = ({ job, onClose }) => {
+export const ApplyBolBelModal: React.FC<ApplyBolBelModalProps> = ({ job, onClose, onGoToProfile }) => {
   const { currentProfile, activeCv, applyViaBolBel } = useDataStore();
 
   const [consentChecked, setConsentChecked] = useState(false);
@@ -134,6 +136,15 @@ export const ApplyBolBelModal: React.FC<ApplyBolBelModalProps> = ({ job, onClose
                     <li key={i}>{field}</li>
                   ))}
                 </ul>
+                {onGoToProfile && (
+                  <button
+                    type="button"
+                    onClick={onGoToProfile}
+                    className="mt-2 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold"
+                  >
+                    Lengkapi Profil
+                  </button>
+                )}
               </div>
             )}
 

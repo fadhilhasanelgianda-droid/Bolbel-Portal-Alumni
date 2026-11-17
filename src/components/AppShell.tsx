@@ -29,7 +29,7 @@ const AppContent: React.FC = () => {
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Alumni Views */}
-        {currentTab === 'jobs' && <JobList />}
+        {currentTab === 'jobs' && <JobList onGoToProfile={() => setCurrentTab('profile')} />}
         {currentTab === 'applications' && <MyApplications />}
         {currentTab === 'profile' && <ProfileAndCV />}
 
@@ -50,15 +50,11 @@ const AppContent: React.FC = () => {
           <div className="flex items-center gap-2">
             <span className="font-bold text-[#BD214C]">Boleh Belajar</span>
             <span>•</span>
-            <span>Portal Karier Alumni MVP v1.0</span>
-            <span>•</span>
-            <span className="hidden md:inline">Gifari Talent Management System</span>
+            <span>Portal Karier Alumni</span>
           </div>
 
-          <div className="flex items-center gap-4 text-[11px]">
-            <span>Hubungi Talent Lead: talent@bolehbelajar.com</span>
-            <span>•</span>
-            <span className="text-stone-400">Palet Resmi: #BD214C, #EA5543, #F9EDDE</span>
+          <div className="text-[11px]">
+            <span>Butuh bantuan? Hubungi talent@bolehbelajar.com</span>
           </div>
         </div>
       </footer>
