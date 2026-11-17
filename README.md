@@ -19,6 +19,8 @@ Akun demo (password `demo-password-123`): `gifari@bolehbelajar.com` (admin), `fa
 
 Unggah CV belum tersedia (CV demo hanya metadata).
 
+`db:seed-demo` hanya mau jalan terhadap database lokal: ia menolak `NODE_ENV=production` dan juga `DATABASE_URL` yang host-nya bukan `localhost`/`127.0.0.1`. Akun demo memakai password publik, jadi jangan pernah dijalankan ke database production (kalau `.env` lokal lo diarahkan ke production untuk `db:migrate`, kembalikan dulu ke database lokal).
+
 ## Production (Vercel + Postgres)
 
 - Set `DATABASE_URL` (gunakan endpoint dengan pooler dan `?sslmode=require` bila perlu).

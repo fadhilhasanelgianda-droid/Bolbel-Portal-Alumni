@@ -4,7 +4,22 @@ import bcrypt from 'bcryptjs';
 import { getPool, tx } from '../src/server/db.ts';
 import { runMigrations } from '../src/server/migrate.ts';
 
+// Demo accounts share a public password, so this must never reach a real database. NODE_ENV alone is not enough:
+// a local shell with a production DATABASE_URL in .env (used for `db:migrate`) would pass it. Require a local host too.
 if (process.env.NODE_ENV === 'production') throw new Error('seed-demo must not run in production');
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
+const dbUrl = process.env.DATABASE_URL;
+if (dbUrl) {
+  let host: string;
+  try {
+    host = new URL(dbUrl).hostname.toLowerCase();
+  } catch {
+    throw new Error('seed-demo: DATABASE_URL is not a valid URL, refusing to continue');
+  }
+  if (!LOCAL_HOSTS.has(host) && !host.endsWith('.localhost')) {
+    throw new Error(`seed-demo refuses to run: DATABASE_URL points at "${host}", not a local database`);
+  }
+}
 
 const PASSWORD = 'demo-password-123';
 const hash = await bcrypt.hash(PASSWORD, 10);
